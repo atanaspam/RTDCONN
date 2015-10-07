@@ -1,16 +1,14 @@
 package com.gla.ac.uk.network;
 
 import backtype.storm.tuple.Values;
-
-import java.io.Serializable;
 import java.util.Random;
 
 /**
  * Created by atanaspam on 04/10/2015.
  */
-public class PacketGenerator implements Serializable {
+public class PacketGenerator {
 
-    private static final long serialVersionUID = 1L;
+    //private static final long serialVersionUID = 1L;
 
 
     public static Values getPacket() {
@@ -28,4 +26,3 @@ public class PacketGenerator implements Serializable {
     }
 
    }
-}
