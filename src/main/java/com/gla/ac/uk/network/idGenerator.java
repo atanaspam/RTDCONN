@@ -7,18 +7,9 @@ import java.io.Serializable;
  */
 public class idGenerator implements Serializable {
 
-
     private static int id = 0;
-
-    public  idGenerator(){
-        this.id=0;
-    }
 
     public static int getNextID(){
         return id++;
-    }
-
-    public int peekCurrentID(){
-        return id;
     }
 }

@@ -7,7 +7,6 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,12 +60,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
             if (tempArray.size() == 90){
                 collector.emit(new Values(componentId, tempArray));
-                //System.out.println(tempArray.size());
-                //System.out.println(tempArray);
-                //System.out.println("----------------------------------------------------------------------------------");
                 packetCache.put(packet.getDestination(), null);
-                //System.out.println(packetCache.get(packet.getDestination()) == null);
-                //System.out.println("**********************************************************************************");
             }
         }
 
