@@ -1,4 +1,4 @@
-package com.gla.ac.uk.network;
+package uk.ac.gla.atanaspam.network;
 
 import java.io.Serializable;
 import java.util.Random;
@@ -6,15 +6,17 @@ import java.util.Random;
 /**
  * Created by atanaspam on 04/10/2015.
  */
-public class Packet implements Serializable {
-
+public class SamplePacket implements Serializable {
+    /**
+     * TODO remove serialization
+     */
     private static final long serialVersionUID = 1L;
     private int id;
     private String source;
     private String destination;
     private int size;
 
-    public Packet(int id, String source, String destination, int size) throws Exception{
+    public SamplePacket(int id, String source, String destination, int size) throws Exception{
 
         this.id = id;
         this.source = source;

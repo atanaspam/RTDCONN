@@ -1,4 +1,4 @@
-package com.gla.ac.uk.network;
+package uk.ac.gla.atanaspam.network;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -26,7 +26,7 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
     public void execute( Tuple tuple )
     {
         int sourceComponentId = (Integer) tuple.getValueByField("componentId");
-        ArrayList <Packet> packetCache = (ArrayList<Packet>) tuple.getValueByField("Array");
+        ArrayList <SamplePacket> packetCache = (ArrayList<SamplePacket>) tuple.getValueByField("Array");
         System.out.println(componentId + " Got a list of packets form " + sourceComponentId + " || " + packetCache.get(0).getDestination());
     }
 

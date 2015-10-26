@@ -1,4 +1,4 @@
-package com.gla.ac.uk.network;
+package uk.ac.gla.atanaspam.network;
 
 import backtype.storm.tuple.Values;
 import java.util.Random;

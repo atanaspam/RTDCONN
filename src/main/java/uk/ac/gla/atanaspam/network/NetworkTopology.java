@@ -1,4 +1,4 @@
-package com.gla.ac.uk.network;
+package uk.ac.gla.atanaspam.network;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
@@ -24,10 +24,13 @@ public class NetworkTopology {
 
 
         Config conf = new Config();
-        conf.registerSerialization(Packet.class);
-        //conf.put("generator", gen);
+        /**
+         * TODO remove registration
+         */
+        //conf.registerSerialization(Packet.class);
         LocalCluster cluster = new LocalCluster();
-        //System.out.println(conf);
+
+
         cluster.submitTopology("test", conf, builder.createTopology());
         Utils.sleep(10000);
         cluster.killTopology("test");
