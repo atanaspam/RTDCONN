@@ -6,7 +6,9 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import java.util.ArrayList;
+
+import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -15,7 +17,16 @@ import java.util.Map;
 public class NetworkAggregatorBolt extends BaseRichBolt {
 
     private OutputCollector collector;
+
     int componentId;
+    long timestamp;
+    String srcMAC;
+    String destMAC;
+    InetAddress srcIP;
+    InetAddress destIP;
+    int srcPort;
+    int destPort;
+    boolean[] flags;
 
     public void prepare( Map conf, TopologyContext context, OutputCollector collector )
     {
@@ -26,8 +37,15 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
     public void execute( Tuple tuple )
     {
         int sourceComponentId = (Integer) tuple.getValueByField("componentId");
-        ArrayList <SamplePacket> packetCache = (ArrayList<SamplePacket>) tuple.getValueByField("Array");
-        System.out.println(componentId + " Got a list of packets form " + sourceComponentId + " || " + packetCache.get(0).getDestination());
+        timestamp = (Long) tuple.getValueByField("timestamp");
+        srcMAC = (String) tuple.getValueByField("srcMAC");
+        destMAC = (String) tuple.getValueByField("destMAC");
+        srcIP = (InetAddress) tuple.getValueByField("srcIP");
+        destIP = (InetAddress) tuple.getValueByField("destIP");
+        srcPort = (Integer) tuple.getValueByField("srcPort");
+        destPort = (Integer) tuple.getValueByField("destPort");
+        flags = (boolean[]) tuple.getValueByField("Flags");
+        System.out.println(sourceComponentId + "  "+ timestamp + " "+ srcMAC + " "+ destMAC + " "+ srcIP + " "+destIP+ " "+srcPort + " "+destPort+ " "+ Arrays.toString(flags) + "IS SAFE");
     }
 
     public void declareOutputFields( OutputFieldsDeclarer declarer )
