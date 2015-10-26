@@ -1,2 +1,2 @@
 # RTDCONN
-A repostiory for my disertation: Real Time Distributed Computing On Network Nodes
+A repository for my dissertation: Real Time Distributed Computing On Network Nodes.
