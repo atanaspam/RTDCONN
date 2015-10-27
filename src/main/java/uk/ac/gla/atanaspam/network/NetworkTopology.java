@@ -16,14 +16,17 @@ public class NetworkTopology {
     {
         //BasicConfigurator.configure();
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout( "spout", new PacketSpout(), 4 );
+        builder.setSpout("spout", new PacketSpout(), 4 );
         builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(), 4 )
                 .fieldsGrouping("spout", "IPPackets", new Fields("destIP"))
                 .fieldsGrouping("spout", "TCPPackets", new Fields("destIP"))
                 .fieldsGrouping("spout", "UDPPackets", new Fields("destIP"));
-        builder.setBolt( "node_0_lvl_1", new NetworkAggregatorBolt(), 2)
+        builder.setBolt("node_0_lvl_1", new NetworkAggregatorBolt(), 2)
                 //.fieldsGrouping("node_0_lvl_0", "TCPPackets", new Fields("destIP"));
-                .shuffleGrouping("node_0_lvl_0");
+                .shuffleGrouping("node_0_lvl_0", "Packets");
+        builder.setBolt("Controller", new NetworkConfiguratorBolt(), 1)
+                .shuffleGrouping("node_0_lvl_0", "Reporting")
+                .shuffleGrouping("node_0_lvl_1", "Reporting");
 
 
         Config conf = new Config();

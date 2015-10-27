@@ -31,7 +31,6 @@ public class PacketSpout extends BaseRichSpout {
     public void nextTuple()
     {
         BasicPacket packet = p.getPacket();
-        //System.out.println(packet);
         if(packet instanceof TCPPacket){
             //System.out.println("TCP");
             collector.emit("TCPPackets", new Values(((TCPPacket) packet).getTimestamp(), ((TCPPacket) packet).getSourceMacAddress(),

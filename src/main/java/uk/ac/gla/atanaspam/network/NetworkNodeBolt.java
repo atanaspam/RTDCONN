@@ -7,8 +7,6 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import uk.ac.gla.atanaspam.IPacket;
-import uk.ac.gla.atanaspam.TCPPacket;
 
 import java.net.InetAddress;
 import java.util.Map;
@@ -26,9 +24,14 @@ public class NetworkNodeBolt extends BaseRichBolt {
     String destMAC;
     InetAddress srcIP;
     InetAddress destIP;
-    int srcPort;
-    int destPort;
+    int srcPort = -1;
+    int destPort = -1;
     boolean[] flags;
+
+
+    int count;
+
+
 
     public void prepare( Map conf, TopologyContext context, OutputCollector collector )
     {
@@ -95,8 +98,15 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
             collector.reportError(e);
         }
+        if (srcPort==58424){
+            count++;
+            if (count == 100){
+                collector.emit("Reporting", new Values(componentId, "port", "58424"));
+                count = 0;
+            }
+        }
         if (isValid(srcIP)){
-            collector.emit(new Values(componentId,timestamp,srcMAC, destMAC,srcIP,destIP,srcPort,destPort, flags));
+            collector.emit("Packets", new Values(componentId,timestamp,srcMAC, destMAC,srcIP,destIP,srcPort,destPort, flags));
 
             /*
             ArrayList<IPPacket> tempArray  = packetCache.get(packet.getDestMacAddress());
@@ -123,9 +133,9 @@ public class NetworkNodeBolt extends BaseRichBolt {
     {
         //Fields f = new Fields("componentId", "timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "Flags");
         //declarer.declare( f );
-        //declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
-        //declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
-        declarer.declare( new Fields("componentId", "timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "Flags"));
+        declarer.declareStream("Reporting", new Fields("componentId", "anomalyType", "anomalyData"));
+        declarer.declareStream("Packets",new Fields("componentId", "timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "Flags"));
+        //declarer.declare( new Fields("componentId", "timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "Flags"));
     }
 
     private boolean isValid(InetAddress n){
@@ -136,6 +146,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }
 
     }
+
 
 
 }
