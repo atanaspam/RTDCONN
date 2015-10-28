@@ -8,7 +8,10 @@ import backtype.storm.utils.Utils;
 
 
 /**
- * Created by atanaspam on 05/10/2015.
+ * This class specifies the Network topology and runs the topology for 10 seconds
+ * @author atanaspam
+ * @created 05/10/2015
+ * @version 0.3
  */
 public class NetworkTopology {
     //private static org.apache.log4j.Logger log = Logger.getLogger(MyLogger.class);

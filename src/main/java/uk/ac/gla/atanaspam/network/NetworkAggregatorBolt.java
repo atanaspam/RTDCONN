@@ -8,16 +8,22 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 
 import java.net.InetAddress;
-import java.util.Arrays;
 import java.util.Map;
 
 /**
- * Created by atanaspam on 06/10/2015.
+ * This bolt currently just accepts packets and does nothing with them
+ * TODO replace this with an ordinary NetworkNodeBolt
+ * @see NetworkNodeBolt - to see where packets are comming from
+ * @see NetworkConfiguratorBolt - to see where this bolt sends events (IT DOES NOT DO IT YET)
+ * @author atanaspam
+ * @created 06/10/2015
+ * @version 0.1
  */
 public class NetworkAggregatorBolt extends BaseRichBolt {
 
     private OutputCollector collector;
 
+    /** store a packet  in order to process it*/
     int componentId;
     long timestamp;
     String srcMAC;
@@ -27,6 +33,7 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
     int srcPort;
     int destPort;
     boolean[] flags;
+    /** End of packet representation */
 
     public void prepare( Map conf, TopologyContext context, OutputCollector collector )
     {
@@ -36,6 +43,7 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
 
     public void execute( Tuple tuple )
     {
+        /** Note that this does not know what data to expect and just tries to print everything... */
         int sourceComponentId = (Integer) tuple.getValueByField("componentId");
         timestamp = (Long) tuple.getValueByField("timestamp");
         srcMAC = (String) tuple.getValueByField("srcMAC");
@@ -51,8 +59,6 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
 
     public void declareOutputFields( OutputFieldsDeclarer declarer )
     {
-
-        //declarer.declare( new Fields( "Array" ) );
         declarer.declareStream("Reporting", new Fields("componentID", "anomalyType", "anomalyData"));
     }
 }

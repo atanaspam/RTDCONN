@@ -1,6 +1,7 @@
 com/
 /target
 storm-test.iml
+output.out
 logfile*
 /bin
 /.idea
