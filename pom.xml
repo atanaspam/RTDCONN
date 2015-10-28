@@ -109,6 +109,11 @@
             <!-- keep storm out of the jar-with-dependencies
                <scope>provided</scope> -->
         </dependency>
+        <dependency>
+            <groupId>com.github.atanaspam</groupId>
+            <artifactId>pcapj</artifactId>
+            <version>0.5.1</version>
+        </dependency>
 
     </dependencies>
 
@@ -120,6 +125,10 @@
         <repository>
             <id>clojars.org</id>
             <url>http://clojars.org/repo</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 </project>
