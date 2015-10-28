@@ -159,6 +159,9 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
 
     private boolean performChecks(){
+        /**
+         * TODO the number(severity) of checks preformed should also be configurable by the Configurator
+         */
         boolean status = true;
         /**
          * Perform port checks

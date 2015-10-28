@@ -4,7 +4,10 @@ import uk.ac.gla.atanaspam.*;
 
 
 /**
- * Created by atanaspam on 20/10/2015.
+ * This class is used to test the module that is responsible for
+ * @author atanaspam
+ * @created 20/10/2015
+ * @version 0.1
  */
 
 public class NewPacketGenerator {

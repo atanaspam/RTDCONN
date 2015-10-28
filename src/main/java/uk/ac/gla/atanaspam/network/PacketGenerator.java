@@ -8,7 +8,11 @@ import java.util.Random;
 
 
 /**
- * Created by atanaspam on 04/10/2015.
+ * This class uses the pcapj library to read a static TCPDump output and generate the corresponding packet objects
+ * Each parsed packet is stored into an arraylist so that the storm topology has an unlimited source of packets
+ * @author atanaspam
+ * @created 04/10/2015
+ * @version 0.1
  */
 public class PacketGenerator {
 
@@ -17,6 +21,9 @@ public class PacketGenerator {
     ArrayList<BasicPacket> list;
     Random generator;
 
+    /**
+     * This constructor initializes the pcapj library, reads the static dump of packets and saves them to an arraylist
+     */
     public PacketGenerator() {
         pcapParser = new PcapParser();
         list = new ArrayList<BasicPacket>();
@@ -38,11 +45,18 @@ public class PacketGenerator {
         }
         pcapParser.closeFile();
     }
-    public BasicPacket getPacket(){
 
+    /**
+     * This method picks up a random packet from the list of packets parsed and returns it
+     * @return the packet selected BasicPacket is used as it is a superclass of any of the packets
+     */
+    public BasicPacket getPacket(){
         return list.get(generator.nextInt(list.size()));
     }
 
+    /**
+     *
+     */
     public void cleanUp(){
         pcapParser.closeFile();
     }

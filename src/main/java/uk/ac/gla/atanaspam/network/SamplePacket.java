@@ -4,7 +4,11 @@ import java.io.Serializable;
 import java.util.Random;
 
 /**
- * Created by atanaspam on 04/10/2015.
+ * This class is no longer used and is pending removal...
+ * @deprecated
+ * @author atanaspam
+ * @created 04/10/2015
+ * @version 0.1
  */
 public class SamplePacket implements Serializable {
     /**

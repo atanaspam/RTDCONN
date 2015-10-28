@@ -45,16 +45,20 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     changed = true;
                 }
                 System.out.println("Problem with port " + description); // for testing
+                break;
             }
             case 2:{
-                //some other rule...
+                /**
+                 * TODO More rules
+                 */
+                break;
             }
             case 5:{
                 /** 5 means a dropped packet */
                 System.out.println("Dropped: " + description); // for testing
+                break;
             }
         }
-
         collector.ack(tuple);
     }
 
