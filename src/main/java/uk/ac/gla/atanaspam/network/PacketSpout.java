@@ -23,8 +23,6 @@ public class PacketSpout extends BaseRichSpout {
     {
         this.collector = collector;
         p = new PacketGenerator();
-        //idGenerator gen = (idGenerator) conf.get("my.object");
-        //setGen(gen);
     }
 
     @Override

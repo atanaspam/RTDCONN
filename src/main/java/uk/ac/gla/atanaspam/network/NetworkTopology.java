@@ -18,6 +18,7 @@ public class NetworkTopology {
         TopologyBuilder builder = new TopologyBuilder();
         builder.setSpout("spout", new PacketSpout(), 4 );
         builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(), 4 )
+                .allGrouping("Controller", "Configure")
                 .fieldsGrouping("spout", "IPPackets", new Fields("destIP"))
                 .fieldsGrouping("spout", "TCPPackets", new Fields("destIP"))
                 .fieldsGrouping("spout", "UDPPackets", new Fields("destIP"));

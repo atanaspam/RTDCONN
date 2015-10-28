@@ -46,6 +46,7 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
         destPort = (Integer) tuple.getValueByField("destPort");
         flags = (boolean[]) tuple.getValueByField("Flags");
         //System.out.println(sourceComponentId + "  "+ timestamp + " "+ srcMAC + " "+ destMAC + " "+ srcIP + " "+destIP+ " "+srcPort + " "+destPort+ " "+ Arrays.toString(flags) + " IS SAFE");
+        collector.ack(tuple);
     }
 
     public void declareOutputFields( OutputFieldsDeclarer declarer )
