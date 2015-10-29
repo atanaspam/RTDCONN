@@ -1,6 +1,6 @@
 com/
 /target
-storm-test.iml
+stormNetwork.iml
 output.out
 logfile*
 /bin
