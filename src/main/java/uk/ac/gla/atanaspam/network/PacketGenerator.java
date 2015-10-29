@@ -1,7 +1,7 @@
 package uk.ac.gla.atanaspam.network;
 
 
-import uk.ac.gla.atanaspam.*;
+import main.java.uk.ac.gla.atanaspam.pcapj.*;
 
 import java.util.ArrayList;
 import java.util.Random;

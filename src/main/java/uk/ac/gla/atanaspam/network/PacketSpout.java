@@ -6,7 +6,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import uk.ac.gla.atanaspam.*;
+import main.java.uk.ac.gla.atanaspam.pcapj.*;
 
 import java.util.Map;
 
