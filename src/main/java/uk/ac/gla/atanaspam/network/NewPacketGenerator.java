@@ -1,6 +1,6 @@
 package uk.ac.gla.atanaspam.network;
 
-import main.java.uk.ac.gla.atanaspam.pcapj.*;
+import uk.ac.gla.atanaspam.pcapj.*;
 
 
 /**

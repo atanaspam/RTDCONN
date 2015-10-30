@@ -41,13 +41,19 @@ public class NetworkNodeBolt extends BaseRichBolt {
     /** those fields store the rules under which the bolt currently operates */
     /** ports is an array of 65535 ints and if ports[portNum] is -1 then traffic through this port is dropped **/
     int[] ports;
+
     /** portCount is used to store the number of packets for a specific port so that portCount[portNum] will
      * store the number of packets that have passed through this port */
     int[] portCount;
+
     /** an arraylist of blocked IP addresses */
     ArrayList<InetAddress> blocked;
+
     /** each boolean[] within badFlags represents a TCP packet'sflags */
     boolean[][] badFlags;
+
+    /** stores the current verbosity level of checks  This can be changed by a Configure message*/
+    int verbosity;
 
 
     public void prepare( Map conf, TopologyContext context, OutputCollector collector )
@@ -72,41 +78,9 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
     public void execute( Tuple tuple )
     {
-        /** Obtain the packet from the spout */
         try {
-            /** if the packet originates from the TCPPackets Stream its a TCPPacket
-             * when its a TCP packet we extract the appropriate fields */
-            if ("TCPPackets".equals(tuple.getSourceStreamId())) {
-                timestamp = (Long) tuple.getValueByField("timestamp");
-                srcMAC = (String) tuple.getValueByField("srcMAC");
-                destMAC = (String) tuple.getValueByField("destMAC");
-                srcIP = (InetAddress) tuple.getValueByField("srcIP");
-                destIP = (InetAddress) tuple.getValueByField("destIP");
-                srcPort = (Integer) tuple.getValueByField("srcPort");
-                destPort = (Integer) tuple.getValueByField("destPort");
-                flags = (boolean[]) tuple.getValueByField("Flags");
-
-            /** if the packet originates from the UDPPackets Stream its a UDPPacket */
-            } else if ("UDPPackets".equals(tuple.getSourceStreamId())) {
-                timestamp = (Long) tuple.getValueByField("timestamp");
-                srcMAC = (String) tuple.getValueByField("srcMAC");
-                destMAC = (String) tuple.getValueByField("destMAC");
-                srcIP = (InetAddress) tuple.getValueByField("srcIP");
-                destIP = (InetAddress) tuple.getValueByField("destIP");
-                srcPort = (Integer) tuple.getValueByField("srcPort");
-                destPort = (Integer) tuple.getValueByField("destPort");
-
-            /** if the packet originates from the IPPackets Stream its a IPPacket */
-            /** an IP packet is a packet that is not UDP or TCP and therefore we only extract basic data */
-            } else if ("IPPackets".equals(tuple.getSourceStreamId())) {
-                timestamp = (Long) tuple.getValueByField("timestamp");
-                srcMAC = (String) tuple.getValueByField("srcMAC");
-                destMAC = (String) tuple.getValueByField("destMAC");
-                srcIP = (InetAddress) tuple.getValueByField("srcIP");
-                destIP = (InetAddress) tuple.getValueByField("destIP");
-
                 /** If data originates from theConfigure stream then it is some sort of new configuration */
-            } else if ("Configure".equals(tuple.getSourceStreamId())) {
+            if ("Configure".equals(tuple.getSourceStreamId())) {
                 /**
                  * Each Configuration message consists of three fields:
                  * 1. Destination: ID of the bolt that should receive it
@@ -124,16 +98,24 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 int code = (Integer) tuple.getValueByField("code");
                 /** I have currently only implemented code 1 which means add this port to the list of blocked ports */
                 switch(code){
-                    case 1:{
+                    case 11:{
                         int newPort = (Integer) tuple.getValueByField("setting");
                         ports[newPort] = -1;
                         portCount[newPort] = 0;
                         System.out.println("Added port "+ newPort + " to blacklist"); // for debugging
                     }
+                    case 10:{ // 10 means push new check verbosity
+                        int newVerb = (Integer) tuple.getValueByField("setting");
+                        verbosity = newVerb;
+                        System.out.println("Chnaged check-verbosity for "+ componentId + " to " + newVerb); // for debugging
+                    }
                 }
                 /** we return here because otherwise the performChecks() method would be invoked on the config data => crash */
                 collector.ack(tuple);
                 return;
+            }else{
+                /** Obtain the packet from the spout */
+                obtainPacket(tuple);
             }
 
         } catch (Exception e) {
@@ -143,7 +125,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         /** Invoke performChecks() on each packet that is received
          * if performChecks returns true the packet is allowed to pass, else it is just dropped
          * */
-        if (performChecks()){
+        if (performChecks(0)){
             collector.emit("Packets", new Values(componentId,timestamp,srcMAC, destMAC,srcIP,destIP,srcPort,destPort, flags));
         }else{
             report(5, srcIP.getHostAddress());
@@ -158,7 +140,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
     }
 
 
-    private boolean performChecks(){
+    private boolean performChecks(int code){
         /**
          * TODO the number(severity) of checks preformed should also be configurable by the Configurator
          */
@@ -226,7 +208,41 @@ public class NetworkNodeBolt extends BaseRichBolt {
         collector.emit("Reporting", new Values(componentId, type, descr));
     }
 
+    /**
+     *
+     * @param tuple
+     */
+    private void obtainPacket(Tuple tuple) {
+        /** if the packet originates from the TCPPackets Stream its a TCPPacket
+         * when its a TCP packet we extract the appropriate fields */
+        if ("TCPPackets".equals(tuple.getSourceStreamId())) {
+            timestamp = (Long) tuple.getValueByField("timestamp");
+            srcMAC = (String) tuple.getValueByField("srcMAC");
+            destMAC = (String) tuple.getValueByField("destMAC");
+            srcIP = (InetAddress) tuple.getValueByField("srcIP");
+            destIP = (InetAddress) tuple.getValueByField("destIP");
+            srcPort = (Integer) tuple.getValueByField("srcPort");
+            destPort = (Integer) tuple.getValueByField("destPort");
+            flags = (boolean[]) tuple.getValueByField("Flags");
 
+            /** if the packet originates from the UDPPackets Stream its a UDPPacket */
+        } else if ("UDPPackets".equals(tuple.getSourceStreamId())) {
+            timestamp = (Long) tuple.getValueByField("timestamp");
+            srcMAC = (String) tuple.getValueByField("srcMAC");
+            destMAC = (String) tuple.getValueByField("destMAC");
+            srcIP = (InetAddress) tuple.getValueByField("srcIP");
+            destIP = (InetAddress) tuple.getValueByField("destIP");
+            srcPort = (Integer) tuple.getValueByField("srcPort");
+            destPort = (Integer) tuple.getValueByField("destPort");
 
-
+            /** if the packet originates from the IPPackets Stream its a IPPacket */
+            /** an IP packet is a packet that is not UDP or TCP and therefore we only extract basic data */
+        } else if ("IPPackets".equals(tuple.getSourceStreamId())) {
+            timestamp = (Long) tuple.getValueByField("timestamp");
+            srcMAC = (String) tuple.getValueByField("srcMAC");
+            destMAC = (String) tuple.getValueByField("destMAC");
+            srcIP = (InetAddress) tuple.getValueByField("srcIP");
+            destIP = (InetAddress) tuple.getValueByField("destIP");
+        }
+    }
 }

@@ -6,7 +6,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import main.java.uk.ac.gla.atanaspam.pcapj.*;
+import uk.ac.gla.atanaspam.pcapj.*;
 
 import java.util.Map;
 
@@ -35,28 +35,29 @@ public class PacketSpout extends BaseRichSpout {
     {
         BasicPacket packet = p.getPacket();
         if(packet instanceof TCPPacket){
+            TCPPacket packet1 = (TCPPacket) packet;
             /** If the packet is a TCPPacket then emit it to the TCPPacket stream */
-            collector.emit("TCPPackets", new Values(((TCPPacket) packet).getTimestamp(), ((TCPPacket) packet).getSourceMacAddress(),
-                    ((TCPPacket) packet).getDestMacAddress(), ((TCPPacket) packet).getSrc_ip(),
-                    ((TCPPacket) packet).getDst_ip(), ((TCPPacket) packet).getSrc_port(), ((TCPPacket) packet).getDst_port(),
-                    ((TCPPacket) packet).getFlags()));
+            collector.emit("TCPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
+                    packet1.getDestMacAddress(), packet1.getSrc_ip(),
+                    packet1.getDst_ip(), packet1.getSrc_port(), packet1.getDst_port(),
+                    packet1.getFlags()));
         }
         else if(packet instanceof UDPPacket){
+            UDPPacket packet1 = (UDPPacket) packet;
             /** If the packet is a UDPPacket then emit it to the UDPPacket stream */
-            collector.emit("UDPPackets", new Values(((UDPPacket) packet).getTimestamp(), ((UDPPacket) packet).getSourceMacAddress(),
-                    ((UDPPacket) packet).getDestMacAddress(), ((UDPPacket) packet).getSrc_ip(),
-                    ((UDPPacket) packet).getDst_ip(), ((UDPPacket) packet).getSrc_port(), ((UDPPacket) packet).getDst_port()));
+            collector.emit("UDPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
+                    packet1.getDestMacAddress(), packet1.getSrc_ip(),
+                    packet1.getDst_ip(), packet1.getSrc_port(), packet1.getDst_port()));
         }
         else if(packet instanceof IPPacket){
+            IPPacket packet1 = (IPPacket) packet;
             /** If the packet is a IPPacket then emit it to the IPPacket stream */
-            collector.emit("IPPackets", new Values(((IPPacket) packet).getTimestamp(), ((IPPacket) packet).getSourceMacAddress(),
-                    ((IPPacket) packet).getDestMacAddress(), ((IPPacket) packet).getSrc_ip(),
-                    ((IPPacket) packet).getDst_ip()));
+            collector.emit("IPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
+                    packet1.getDestMacAddress(), packet1.getSrc_ip(), packet1.getDst_ip()));
         }
         else
             /** If it is not recognised, dont emit anything */
             return;
-        //collector.emit(p.getPacket() );
     }
 
     @Override

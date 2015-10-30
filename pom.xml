@@ -30,7 +30,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>uk.ac.gla.atanaspam.network.NetworkTopology.Main</mainClass>
+                            <mainClass>uk.ac.gla.atanaspam.network.NetworkTopology</mainClass>
                         </manifest>
                         <manifestEntries>
                             <Class-Path>.</Class-Path>
@@ -112,7 +112,7 @@
         <dependency>
             <groupId>com.github.atanaspam</groupId>
             <artifactId>pcapj</artifactId>
-            <version>0.5.1</version>
+            <version>ae08e13</version>
         </dependency>
 
     </dependencies>

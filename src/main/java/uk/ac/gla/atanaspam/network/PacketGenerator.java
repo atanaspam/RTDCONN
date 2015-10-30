@@ -1,7 +1,7 @@
 package uk.ac.gla.atanaspam.network;
 
 
-import main.java.uk.ac.gla.atanaspam.pcapj.*;
+import uk.ac.gla.atanaspam.pcapj.*;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -28,7 +28,7 @@ public class PacketGenerator {
         pcapParser = new PcapParser();
         list = new ArrayList<BasicPacket>();
         generator = new Random();
-        filePath = "/Users/atanaspam/Desktop/DumpFile03.pcap";
+        filePath = "/Users/atanaspam/Desktop/DumpFile03.pcap"; /**CHANGEME path to your static pcap export */
         if(pcapParser.openFile(filePath) < 0){
             System.err.println("Failed to open " + filePath + ", exiting.");
             return;

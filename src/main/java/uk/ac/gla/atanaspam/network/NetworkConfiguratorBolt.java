@@ -39,8 +39,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         switch (anomalyType){
             case 1:{
                 if (changed == false) {
-                    // 1 is the code to add port to list of blocked ports
-                    int code = 1;
+                    // 11 is the code to add port to list of blocked ports
+                    int code = 11;
                     collector.emit("Configure", new Values(srcComponentId, code, new Integer(description)));
                     changed = true;
                 }
