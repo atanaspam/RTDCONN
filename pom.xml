@@ -112,7 +112,7 @@
         <dependency>
             <groupId>com.github.atanaspam</groupId>
             <artifactId>pcapj</artifactId>
-            <version>ae08e13</version>
+            <version>2a1201e</version>
         </dependency>
 
     </dependencies>

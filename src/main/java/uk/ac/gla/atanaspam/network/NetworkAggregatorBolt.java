@@ -7,12 +7,13 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 
-import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This bolt currently just accepts packets and does nothing with them
- * TODO replace this with an ordinary NetworkNodeBolt
+ * This bolt currently represents all the clients within a datacenter topology and
+ * therefore accepts all the packets that have managed to pass through the topology
+ * currently it only counts all the packets it recieves.
  * @see NetworkNodeBolt - to see where packets are comming from
  * @see NetworkConfiguratorBolt - to see where this bolt sends events (IT DOES NOT DO IT YET)
  * @author atanaspam
@@ -22,43 +23,31 @@ import java.util.Map;
 public class NetworkAggregatorBolt extends BaseRichBolt {
 
     private OutputCollector collector;
-
-    /** store a packet  in order to process it*/
     int componentId;
-    long timestamp;
-    String srcMAC;
-    String destMAC;
-    InetAddress srcIP;
-    InetAddress destIP;
-    int srcPort;
-    int destPort;
-    boolean[] flags;
-    /** End of packet representation */
+    long packetCount;
 
     public void prepare( Map conf, TopologyContext context, OutputCollector collector )
     {
         this.collector = collector;
         componentId = context.getThisTaskId();
+        packetCount = 0;
     }
 
     public void execute( Tuple tuple )
     {
-        /** Note that this does not know what data to expect and just tries to print everything... */
-        int sourceComponentId = (Integer) tuple.getValueByField("componentId");
-        timestamp = (Long) tuple.getValueByField("timestamp");
-        srcMAC = (String) tuple.getValueByField("srcMAC");
-        destMAC = (String) tuple.getValueByField("destMAC");
-        srcIP = (InetAddress) tuple.getValueByField("srcIP");
-        destIP = (InetAddress) tuple.getValueByField("destIP");
-        srcPort = (Integer) tuple.getValueByField("srcPort");
-        destPort = (Integer) tuple.getValueByField("destPort");
-        flags = (boolean[]) tuple.getValueByField("Flags");
-        //System.out.println(sourceComponentId + "  "+ timestamp + " "+ srcMAC + " "+ destMAC + " "+ srcIP + " "+destIP+ " "+srcPort + " "+destPort+ " "+ Arrays.toString(flags) + " IS SAFE");
+        packetCount++;
         collector.ack(tuple);
     }
 
     public void declareOutputFields( OutputFieldsDeclarer declarer )
     {
         declarer.declareStream("Reporting", new Fields("componentID", "anomalyType", "anomalyData"));
+    }
+    @Override
+    public Map<String,Object> getComponentConfiguration(){
+        Map<String, Object> m = new HashMap<String, Object>();
+        m.put("ID", componentId);
+        m.put("packetCount", packetCount);
+        return m;
     }
 }

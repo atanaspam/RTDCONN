@@ -11,6 +11,7 @@ import backtype.storm.tuple.Values;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -25,18 +26,8 @@ import java.util.Map;
 public class NetworkNodeBolt extends BaseRichBolt {
 
     private OutputCollector collector;
-
-    /** store a packet  in order to process it*/
     int componentId;
-    long timestamp;
-    String srcMAC;
-    String destMAC;
-    InetAddress srcIP;
-    InetAddress destIP;
-    int srcPort = -1;
-    int destPort = -1;
-    boolean[] flags;
-    /** End of packet representation */
+
 
     /** those fields store the rules under which the bolt currently operates */
     /** ports is an array of 65535 ints and if ports[portNum] is -1 then traffic through this port is dropped **/
@@ -48,9 +39,11 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
     /** an arraylist of blocked IP addresses */
     ArrayList<InetAddress> blocked;
-
+    ArrayList<InetAddress> monitored;
     /** each boolean[] within badFlags represents a TCP packet'sflags */
-    boolean[][] badFlags;
+    ArrayList<boolean[]> badFlags;
+
+    GenericPacket packet;
 
     /** stores the current verbosity level of checks  This can be changed by a Configure message*/
     int verbosity;
@@ -62,17 +55,24 @@ public class NetworkNodeBolt extends BaseRichBolt {
          *  TODO this should later be configured to some initial parameters using the Configurator bolt */
         ports = new int[65535];
         portCount = new int[65535];
-        blocked = new ArrayList<InetAddress>();
+        blocked = new ArrayList<>();
+        monitored = new ArrayList<>();
         try {
             blocked.add(InetAddress.getByName("74.125.136.109"));
+            monitored.add(InetAddress.getByName("192.168.1.1"));
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        badFlags = new boolean[2][2];
+        badFlags = new ArrayList<>();
 
         this.collector = collector;
         componentId = context.getThisTaskId();
-        System.out.println("Initialized component " + componentId);
+        if(context.getThisComponentId().equals("node_0_lvl_0")){
+            verbosity = 1;
+        } else if (context.getThisComponentId().equals("node_0_lvl_1")){
+            verbosity= 0;
+        }
+        System.out.println("Initialized component " + componentId + " from " + context.getThisComponentId() + " with verbosity " + verbosity);
 
     }
 
@@ -89,25 +89,25 @@ public class NetworkNodeBolt extends BaseRichBolt {
                  */
                 int dest = (Integer) tuple.getValueByField("componentId");
                 /** obtain the address and check if you are the intended recipient of the message */
-                /*
+
                 if (dest !=componentId){
                     collector.ack(tuple);
                     return;
-                }*/
+                }
                 /** get the code for the operation to be performed */
                 int code = (Integer) tuple.getValueByField("code");
                 /** I have currently only implemented code 1 which means add this port to the list of blocked ports */
                 switch(code){
-                    case 11:{
-                        int newPort = (Integer) tuple.getValueByField("setting");
-                        ports[newPort] = -1;
-                        portCount[newPort] = 0;
-                        System.out.println("Added port "+ newPort + " to blacklist"); // for debugging
-                    }
                     case 10:{ // 10 means push new check verbosity
                         int newVerb = (Integer) tuple.getValueByField("setting");
                         verbosity = newVerb;
                         System.out.println("Chnaged check-verbosity for "+ componentId + " to " + newVerb); // for debugging
+                    }
+                    case 11:{
+                        int newPort = (Integer) tuple.getValueByField("setting");
+                        ports[newPort] = -1;
+                        portCount[newPort] = 0;
+                        System.out.println(componentId + " Added port "+ newPort + " to blacklist"); // for debugging
                     }
                 }
                 /** we return here because otherwise the performChecks() method would be invoked on the config data => crash */
@@ -115,7 +115,11 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 return;
             }else{
                 /** Obtain the packet from the spout */
-                obtainPacket(tuple);
+                packet = obtainPacket(tuple);
+                if (packet == null){
+                    System.out.println("Null packet");
+                    return;
+                }
             }
 
         } catch (Exception e) {
@@ -125,10 +129,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
         /** Invoke performChecks() on each packet that is received
          * if performChecks returns true the packet is allowed to pass, else it is just dropped
          * */
-        if (performChecks(0)){
-            collector.emit("Packets", new Values(componentId,timestamp,srcMAC, destMAC,srcIP,destIP,srcPort,destPort, flags));
+        if (performChecks(verbosity, packet)){
+            send(packet);
         }else{
-            report(5, srcIP.getHostAddress());
+            report(5, packet.getSrc_ip());
         }
         collector.ack(tuple);
     }
@@ -136,33 +140,57 @@ public class NetworkNodeBolt extends BaseRichBolt {
     public void declareOutputFields( OutputFieldsDeclarer declarer )
     {
         declarer.declareStream("Reporting", new Fields("componentId", "anomalyType", "anomalyData"));
-        declarer.declareStream("Packets",new Fields("componentId", "timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "Flags"));
+
+        declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
+        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
+        declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "Flags"));
     }
 
 
-    private boolean performChecks(int code){
+    private boolean performChecks(int code,GenericPacket packet){
         /**
          * TODO the number(severity) of checks preformed should also be configurable by the Configurator
          */
+        if (code == 0)
+            return true;
         boolean status = true;
-        /**
-         * Perform port checks
-         */
-        status = status & checkPort(destPort);
-        /**
-         * perform IP checks
-         */
-        status = status & checkIP(srcIP);
 
-        /**
-         * check flags
-         */
-        status = status & checkFlags(flags);
+        if (packet.getType().equals("TCP")){
+            /**
+             * Perform port checks
+             */
+            status = status & checkPort(packet.getDst_port());
+            /**
+             * perform IP checks
+             */
+            status = status & checkIP(packet.getSrc_ip());
+
+            /**
+             * check flags
+             */
+            status = status & checkFlags(packet.getFlags());
+        }
+        else if (packet.getType().equals("UDP")){
+            /**
+             * Perform port checks
+             */
+            status = status & checkPort(packet.getDst_port());
+            /**
+             * perform IP checks
+             */
+            status = status & checkIP(packet.getSrc_ip());
+        }
+        else if (packet.getType().equals("IPP")){
+            /**
+             * perform IP checks
+             */
+            status = status & checkIP(packet.getSrc_ip());
+        }
+        else return false;
 
         return status;
 
     }
-
 
     private boolean checkPort(int port){
         int x = ports[port];
@@ -175,7 +203,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
              * @see NetworkConfiguratorBolt to see how it handles that
              */
             if (y == 100){
-                report(1, Integer.toString(port));
+                report(1, port);
                 portCount[port] = 0;
             }
         } else if (x == -1){
@@ -185,9 +213,11 @@ public class NetworkNodeBolt extends BaseRichBolt {
     }
 
     private boolean checkIP(InetAddress addr){
-        if (blocked.contains(srcIP))
+        if (blocked.contains(addr))
             return false;
-        else
+        else if(monitored.contains(addr)){
+            report(4, addr);
+        }
             return true;
 
     }
@@ -204,7 +234,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * @param type
      * @param descr
      */
-    private void report(int type, String descr){
+    private void report(int type, Object descr){
         collector.emit("Reporting", new Values(componentId, type, descr));
     }
 
@@ -212,37 +242,70 @@ public class NetworkNodeBolt extends BaseRichBolt {
      *
      * @param tuple
      */
-    private void obtainPacket(Tuple tuple) {
+    private GenericPacket obtainPacket(Tuple tuple) {
         /** if the packet originates from the TCPPackets Stream its a TCPPacket
          * when its a TCP packet we extract the appropriate fields */
         if ("TCPPackets".equals(tuple.getSourceStreamId())) {
-            timestamp = (Long) tuple.getValueByField("timestamp");
-            srcMAC = (String) tuple.getValueByField("srcMAC");
-            destMAC = (String) tuple.getValueByField("destMAC");
-            srcIP = (InetAddress) tuple.getValueByField("srcIP");
-            destIP = (InetAddress) tuple.getValueByField("destIP");
-            srcPort = (Integer) tuple.getValueByField("srcPort");
-            destPort = (Integer) tuple.getValueByField("destPort");
-            flags = (boolean[]) tuple.getValueByField("Flags");
+            long timestamp = (Long) tuple.getValueByField("timestamp");
+            String srcMAC = (String) tuple.getValueByField("srcMAC");
+            String destMAC = (String) tuple.getValueByField("destMAC");
+            InetAddress srcIP = (InetAddress) tuple.getValueByField("srcIP");
+            InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
+            int srcPort = (Integer) tuple.getValueByField("srcPort");
+            int destPort = (Integer) tuple.getValueByField("destPort");
+            boolean[] flags = (boolean[]) tuple.getValueByField("Flags");
+            return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort, flags);
 
             /** if the packet originates from the UDPPackets Stream its a UDPPacket */
         } else if ("UDPPackets".equals(tuple.getSourceStreamId())) {
-            timestamp = (Long) tuple.getValueByField("timestamp");
-            srcMAC = (String) tuple.getValueByField("srcMAC");
-            destMAC = (String) tuple.getValueByField("destMAC");
-            srcIP = (InetAddress) tuple.getValueByField("srcIP");
-            destIP = (InetAddress) tuple.getValueByField("destIP");
-            srcPort = (Integer) tuple.getValueByField("srcPort");
-            destPort = (Integer) tuple.getValueByField("destPort");
+            long timestamp = (Long) tuple.getValueByField("timestamp");
+            String srcMAC = (String) tuple.getValueByField("srcMAC");
+            String destMAC = (String) tuple.getValueByField("destMAC");
+            InetAddress srcIP = (InetAddress) tuple.getValueByField("srcIP");
+            InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
+            int srcPort = (Integer) tuple.getValueByField("srcPort");
+            int destPort = (Integer) tuple.getValueByField("destPort");
+            return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort);
 
             /** if the packet originates from the IPPackets Stream its a IPPacket */
             /** an IP packet is a packet that is not UDP or TCP and therefore we only extract basic data */
         } else if ("IPPackets".equals(tuple.getSourceStreamId())) {
-            timestamp = (Long) tuple.getValueByField("timestamp");
-            srcMAC = (String) tuple.getValueByField("srcMAC");
-            destMAC = (String) tuple.getValueByField("destMAC");
-            srcIP = (InetAddress) tuple.getValueByField("srcIP");
-            destIP = (InetAddress) tuple.getValueByField("destIP");
+            long timestamp = (Long) tuple.getValueByField("timestamp");
+            String srcMAC = (String) tuple.getValueByField("srcMAC");
+            String destMAC = (String) tuple.getValueByField("destMAC");
+            InetAddress srcIP = (InetAddress) tuple.getValueByField("srcIP");
+            InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
+            return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP);
+        }
+        System.out.println(tuple.getSourceStreamId());
+        return null;
+    }
+    @Override
+    public Map<String,Object> getComponentConfiguration(){
+        Map<String, Object> m = new HashMap<String, Object>();
+        m.put("ID", componentId);
+        m.put("BlockedPorts", ports);
+        m.put("PortHits", portCount);
+        m.put("BlockedIP", blocked);
+        m.put("BadFlags", badFlags);
+        m.put("Verbosity", verbosity);
+        return m;
+    }
+
+    private void send(GenericPacket packet){
+        if(packet.getType().equals("TCP")){
+            collector.emit("TCPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
+                    packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
+                    packet.getDst_port(), packet.getFlags()));
+        }
+        else if(packet.getType().equals("UDP")){
+            collector.emit("UDPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
+                    packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
+                    packet.getDst_port()));
+        }
+        else if(packet.getType().equals("IPP")){
+            collector.emit("IPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
+                    packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip()));
         }
     }
 }

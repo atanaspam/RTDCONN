@@ -3,6 +3,8 @@ package uk.ac.gla.atanaspam.network;
 
 import uk.ac.gla.atanaspam.pcapj.*;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -44,6 +46,12 @@ public class PacketGenerator {
             //System.out.println(packet);
         }
         pcapParser.closeFile();
+        try {
+            list.add(new GenericPacket(1111111111,"FF:FF:FF:FF:FF", "FF:FF:FF:FF:FF", InetAddress.getByName("192.168.1.1"),
+                    InetAddress.getByName("203.164.234.111")));
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

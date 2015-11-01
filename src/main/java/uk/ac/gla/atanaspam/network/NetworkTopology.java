@@ -30,12 +30,20 @@ public class NetworkTopology {
                 .fieldsGrouping("spout", "TCPPackets", new Fields("destIP"))
                 .fieldsGrouping("spout", "UDPPackets", new Fields("destIP"));
 
-        builder.setBolt("node_0_lvl_1", new NetworkAggregatorBolt(), 2)             // we have 2 high level bolts
-                .shuffleGrouping("node_0_lvl_0", "Packets");                        // they receive approved packets from the low level bolts
+        builder.setBolt("node_0_lvl_1", new NetworkNodeBolt(), 2)                   // we have 2 high level bolts
+                .allGrouping("Controller", "Configure")
+                .shuffleGrouping("node_0_lvl_0", "IPPackets")                              // packets from the emitter are grouped by the destIP
+                .shuffleGrouping("node_0_lvl_0", "TCPPackets")
+                .shuffleGrouping("node_0_lvl_0", "UDPPackets");                            // they receive approved packets from the low level bolts
 
         builder.setBolt("Controller", new NetworkConfiguratorBolt(), 1)             // we have 1 controller bolt
-                .shuffleGrouping("node_0_lvl_0", "Reporting")                       // it receives all the reporting streams from
-                .shuffleGrouping("node_0_lvl_1", "Reporting");                      // the high and low level bolts
+                .allGrouping("node_0_lvl_0", "Reporting")                           // it receives all the reporting streams from
+                .allGrouping("node_0_lvl_1", "Reporting");                          // the high and low level bolts
+
+        builder.setBolt("Aggregator", new NetworkAggregatorBolt(),1)
+                .allGrouping("node_0_lvl_1", "IPPackets")
+                .allGrouping("node_0_lvl_1", "TCPPackets")
+                .allGrouping("node_0_lvl_1", "UDPPackets");
 
 
         /***                End of Topology Configuration                   ***/
