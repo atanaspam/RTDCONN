@@ -39,21 +39,27 @@ public class NetworkTopology {
         builder.setBolt("Controller", new NetworkConfiguratorBolt(), 1)             // we have 1 controller bolt
                 .allGrouping("node_0_lvl_0", "Reporting")                           // it receives all the reporting streams from
                 .allGrouping("node_0_lvl_1", "Reporting");                          // the high and low level bolts
+                //.allGrouping("MetricsConsumer", "Reporting");
 
         builder.setBolt("Aggregator", new NetworkAggregatorBolt(),1)
                 .allGrouping("node_0_lvl_1", "IPPackets")
                 .allGrouping("node_0_lvl_1", "TCPPackets")
                 .allGrouping("node_0_lvl_1", "UDPPackets");
 
+        //MetricsConsumer a = new MetricsConsumer();
+        //builder.setBolt("MetricsConsumer", a, 1);
+
+
 
         /***                End of Topology Configuration                   ***/
 
         Config conf = new Config();
+        //conf.registerMetricsConsumer(MetricsConsumer.class, 1);
         LocalCluster cluster = new LocalCluster();
 
         /** submit the topology and run it for 10 seconds */
         cluster.submitTopology("test", conf, builder.createTopology());
-        Utils.sleep(10000);
+        Utils.sleep(5000);
         cluster.killTopology("test");
         cluster.shutdown();
     }

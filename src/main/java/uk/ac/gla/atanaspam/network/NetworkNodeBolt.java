@@ -1,5 +1,6 @@
 package uk.ac.gla.atanaspam.network;
 
+import backtype.storm.metric.api.MultiCountMetric;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -47,6 +48,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
     /** stores the current verbosity level of checks  This can be changed by a Configure message*/
     int verbosity;
+    /** Used to collect packet count metric */
+    //transient MultiCountMetric _genMetric;
 
 
     public void prepare( Map conf, TopologyContext context, OutputCollector collector )
@@ -67,6 +70,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
         this.collector = collector;
         componentId = context.getThisTaskId();
+        //initMetrics(context);
         if(context.getThisComponentId().equals("node_0_lvl_0")){
             verbosity = 1;
         } else if (context.getThisComponentId().equals("node_0_lvl_1")){
@@ -135,6 +139,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             report(5, packet.getSrc_ip());
         }
         collector.ack(tuple);
+        //_genMetric.scope("count").incr();
     }
 
     public void declareOutputFields( OutputFieldsDeclarer declarer )
@@ -308,4 +313,12 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip()));
         }
     }
+    /*
+    void initMetrics(TopologyContext context)
+    {
+        _genMetric = new MultiCountMetric();
+
+        context.registerMetric("execute_count", _genMetric, 2);
+    }
+    */
 }

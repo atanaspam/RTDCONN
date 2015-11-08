@@ -8,7 +8,6 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
-import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,6 +80,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 break;
             }
             case 2:{    /* 2 means hits to an unexpected port */
+                int count = (Integer)tuple.getValueByField("anomalyData");
+                System.out.println("got "+ count + " form " + srcComponentId);
                 /* TODO implement */
                 break;
             }
@@ -104,7 +105,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             }
             case 5:{    /* 5 means a dropped packet */
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                System.out.println("Dropped: " + ip.getHostAddress()); // for testing
+                //System.out.println("Dropped: " + ip.getHostAddress()); // for testing
                 break;
             }
             /* TODO implement more rules */
