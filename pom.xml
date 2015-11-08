@@ -103,11 +103,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>storm</groupId>
-            <artifactId>storm-lib</artifactId>
-            <version>0.8.1</version>
-            <!-- keep storm out of the jar-with-dependencies
-               <scope>provided</scope> -->
+            <groupId>org.apache.storm</groupId>
+            <artifactId>storm-core</artifactId>
+            <version>0.10.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.atanaspam</groupId>
