@@ -6,6 +6,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import backtype.storm.utils.Utils;
 import uk.ac.gla.atanaspam.pcapj.*;
 
 import java.util.Map;
@@ -33,6 +34,7 @@ public class PacketSpout extends BaseRichSpout {
     @Override
     public void nextTuple()
     {
+        Utils.sleep(300);
         BasicPacket packet = p.getPacket();
         if(packet instanceof TCPPacket){
             TCPPacket packet1 = (TCPPacket) packet;

@@ -30,6 +30,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
 
     ArrayList<Integer> lvl0;
     ArrayList<Integer> lvl1;
+    ArrayList<Integer> all;
+
 
     /**
      * This method prepares the configurator bolt by initializing all the appropriate fields and obtaining
@@ -53,6 +55,10 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 lvl1.add(entry.getKey());
             }
         }
+        all = new ArrayList<>();
+        all.addAll(lvl0);
+        all.addAll(lvl1);
+        intialConfig();
     }
 
     public void execute( Tuple tuple )
@@ -76,7 +82,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     changed = true;
                 }
 
-                System.out.println("Problem with port " + port); // for testing
+                //System.out.println("Problem with port " + port); // for testing
                 break;
             }
             case 2:{    /* 2 means hits to an unexpected port */
@@ -135,7 +141,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
      * @param code the command to be executed
      * @param setting the new value
      */
-    public void emitConfig(int dest, int code, int setting){
+    public void emitConfig(int dest, int code, Object setting){
         collector.emit("Configure", new Values(dest, code, setting));
         // command codes start from 10 so the first will be 10-10=0
         commandHistory[code-10]++;
@@ -147,9 +153,33 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
      * @param code the command to be executed
      * @param setting the new value
      */
-    private void emitBulkConfig(ArrayList<Integer> target, int code, int setting){
+    private void emitBulkConfig(ArrayList<Integer> target, int code, Object setting){
         for (int n: target){
             collector.emit("Configure", new Values(n, code, setting));
         }
     }
+
+    public void intialConfig(){
+        int[] blockedPorts = {};
+        ArrayList<InetAddress> blockedIP = new ArrayList<>();
+        ArrayList<InetAddress> monitoredIP = new ArrayList<>();
+        try {
+            //blockedIP .add(InetAddress.getByName("192.168.1.2"));
+            //monitoredIP.add(InetAddress.getByName("192.168.1.2"));
+        }catch (Exception e){}
+        boolean[][] badflags = {};
+
+        emitBulkConfig(lvl0, 10,1);
+        emitBulkConfig(lvl1, 10,0);
+        for(int port : blockedPorts)
+            emitBulkConfig(all, 11, port);
+        for(InetAddress ip : blockedIP)
+            emitBulkConfig(all, 13, ip);
+        for(InetAddress ip : monitoredIP)
+            emitBulkConfig(all, 15, ip);
+        for(boolean[] flags :badflags)
+            emitBulkConfig(all, 15, flags);
+        emitBulkConfig(all, 19, false);
+    }
+
 }
