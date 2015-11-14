@@ -2,6 +2,7 @@ package uk.ac.gla.atanaspam.network;
 
 import uk.ac.gla.atanaspam.pcapj.IPPacket;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.Arrays;
 
@@ -11,7 +12,7 @@ import java.util.Arrays;
  * @version 0.1
  * @created 01/11/2015
  */
-public class GenericPacket extends IPPacket {
+public class GenericPacket extends IPPacket implements Serializable{
 
     String type;
     protected int src_port;

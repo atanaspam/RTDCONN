@@ -5,6 +5,7 @@ import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
+import uk.ac.gla.atanaspam.network.utils.StateKeeper;
 
 import java.lang.reflect.Array;
 import java.net.InetAddress;
@@ -58,8 +59,8 @@ public class NetworkTopology {
 
 
         Config conf = new Config();
-
         conf.put("timecheck", false);
+        conf.registerSerialization(StateKeeper.class);
         LocalCluster cluster = new LocalCluster();
 
         /** submit the topology and run it for 10 seconds */

@@ -11,10 +11,11 @@ import backtype.storm.tuple.Values;
 import backtype.storm.utils.TupleUtils;
 import uk.ac.gla.atanaspam.network.utils.NthLastModifiedTimeTracker;
 import uk.ac.gla.atanaspam.network.utils.SlidingWindowCounter;
+import uk.ac.gla.atanaspam.network.utils.StateKeeper;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -46,23 +47,24 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private final int windowLengthInSeconds;
     private final int emitFrequencyInSeconds;
     private NthLastModifiedTimeTracker lastModifiedTracker;
-    Map<InetAddress, Long> currentIpCounts;
-    Map<Integer, Long> currentPortCounts;
+    private StateKeeper state;
+    //Map<InetAddress, Long> currentIpCounts;
+    //Map<Integer, Long> currentPortCounts;
 
 
     /** those fields store the rules under which the bolt currently operates */
     /** ports is an array of 65535 ints and if ports[portNum] is -1 then traffic through this port is dropped **/
-    int[] ports;
+    //int[] ports;
 
     /** portCount is used to store the number of packets for a specific port so that portCount[portNum] will
      * store the number of packets that have passed through this port */
-    int[] portCount;
+    //int[] portCount;
 
     /** an arraylist of blocked IP addresses */
-    ArrayList<InetAddress> blocked;
-    ArrayList<InetAddress> monitored;
+    //ArrayList<InetAddress> blocked;
+    //ArrayList<InetAddress> monitored;
     /** each boolean[] within badFlags represents a TCP packet'sflags */
-    ArrayList<boolean[]> badFlags;
+    //ArrayList<boolean[]> badFlags;
     GenericPacket packet;
     /** stores the current verbosity level of checks  This can be changed by a Configure message*/
     int verbosity;
@@ -76,12 +78,16 @@ public class NetworkNodeBolt extends BaseRichBolt {
     }
 
     public NetworkNodeBolt(int windowLengthInSeconds, int emitFrequencyInSeconds){
+        /*
         ports = new int[65535];
         portCount = new int[65535];
         blocked = new ArrayList<>();
         monitored = new ArrayList<>();
         badFlags = new ArrayList<>();
+        */
         packetsProcessed = 0;
+
+        state = new StateKeeper();
 
         this.windowLengthInSeconds = windowLengthInSeconds;
         this.emitFrequencyInSeconds = emitFrequencyInSeconds;
@@ -117,16 +123,16 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }else {
             for (Map.Entry<InetAddress, Long> a : ipCounts.entrySet()) {
                 try {
-                    if (currentIpCounts.get(a.getKey()) < a.getValue()) {
+                    if (state.getSrcIpHitCount().get(a.getKey()) < a.getValue()) {
                         tempIpCount.put(a.getKey(), a.getValue());
-                        System.out.println(componentId + ": " + a.getKey() + " " + currentIpCounts.get(a.getKey()) + "-" + a.getValue());
+                        System.out.println(componentId + ": " + a.getKey() + " " + state.getSrcIpHitCount().get(a.getKey()) + "-" + a.getValue());
                     }
                 } catch (NullPointerException e) {
                     continue;
                 }
             }
-            currentIpCounts = tempIpCount;
-            currentPortCounts = portCounts;
+            state.setSrcIpHitCount(tempIpCount);
+            state.setPortHitCount(portCounts);
             //TODO emit to configurator
             //emit(counts, actualWindowLengthInSeconds);
         }
@@ -174,50 +180,51 @@ public class NetworkNodeBolt extends BaseRichBolt {
                         }
                         case 11: { // means push new port to blacklist
                             int newPort = (Integer) tuple.getValueByField("setting");
-                            ports[newPort] = -1;
-                            //portCount[newPort] = 0;
+                            state.setBlockedPort(newPort, true);
+                            //TODO clear current Port HitCount if necesary
                             System.out.println(componentId + " Added port " + newPort + " to blacklist"); // for debugging
                             break;
                         }
                         case 12: { // means remove a port from blacklist
                             int newPort = (Integer) tuple.getValueByField("setting");
-                            ports[newPort] = 0;
+                            state.setBlockedPort(newPort, false);
+                            //TODO clear current Port HitCount if necesary
                             System.out.println(componentId + " Removed port " + newPort + " from blacklist"); // for debugging
                             break;
                         }
                         case 13:{ // means add new IP to blacklist
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
-                            blocked.add(newAddr);
+                            state.addBlockedIpAddr(newAddr);
                             System.out.println(componentId + " Added " + newAddr.getHostAddress() + " to blacklist"); // for debugging
                             break;
                         }
                         case 14: { // means remove IP from blacklist
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
-                            blocked.remove(newAddr);
+                            state.removeBlockedIpAddr(newAddr);
                             System.out.println(componentId + " Removed " + newAddr.getHostAddress() + " from blacklist"); // for debugging
                             break;
                         }
                         case 15:{ // means add new IP to monitored
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
-                            monitored.add(newAddr);
+                            state.addMonitoredIpAddr(newAddr);
                             System.out.println(componentId + " Added " + newAddr.getHostAddress() + " to monitored"); // for debugging
                             break;
                         }
                         case 16: { // means remove IP from monitored
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
-                            monitored.remove(newAddr);
+                            state.removeMonitoredIpAddr(newAddr);
                             System.out.println(componentId + " Removed " + newAddr.getHostAddress() + " from monitored"); // for debugging
                             break;
                         }
                         case 17: { // add new flag to blocked
                             boolean[] newFlags = (boolean[]) tuple.getValueByField("setting");
-                            badFlags.add(newFlags);
+                            state.addBlockedFlag(newFlags);
                             System.out.println(componentId + " Added new flags to blocked"); // for debugging
                             break;
                         }
                         case 18: { // means remove flag from flags
                             boolean[] newFlags = (boolean[]) tuple.getValueByField("setting");
-                            badFlags.remove(newFlags);
+                            state.removeBlockedFlag(newFlags);
                             System.out.println(componentId + " Removed flags from blocked"); // for debugging
                             break;
                         }
@@ -227,6 +234,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                             System.out.println(componentId + " Set timeChecks to " + timeChecks); // for debugging
                             break;
                         }
+
                     }
                     /** we return here because otherwise the performChecks() method would be invoked on the config data => crash */
                     collector.ack(tuple);
@@ -240,7 +248,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     }
                     packetsProcessed++;
                     if (packetsProcessed >= 6000 && !timeChecks){
+                        System.out.println(state);
+                        state.resetCounts();
                         //TODO do packet checks
+                        packetsProcessed = 0;
                     }
                 }
 
@@ -274,7 +285,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
     private boolean performChecks(int code,GenericPacket packet){
         /**
-         * TODO the number(severity) of checks preformed should also be configurable by the Configurator
+         * TODO each check should depend on the "code"
          */
         if (code == 0)
             return true;
@@ -284,7 +295,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             /** Perform port checks */
             status = status & checkPort(packet.getDst_port());
             /** perform IP checks */
-            status = status & checkIP(packet.getSrc_ip());
+            status = status & checkSrcIP(packet.getSrc_ip());
             /** check flags */
             status = status & checkFlags(packet.getFlags());
         }
@@ -292,11 +303,11 @@ public class NetworkNodeBolt extends BaseRichBolt {
             /** Perform port checks */
             status = status & checkPort(packet.getDst_port());
             /** perform IP checks */
-            status = status & checkIP(packet.getSrc_ip());
+            status = status & checkSrcIP(packet.getSrc_ip());
         }
         else if (packet.getType().equals("IPP")){
             /** perform IP checks */
-            status = status & checkIP(packet.getSrc_ip());
+            status = status & checkSrcIP(packet.getSrc_ip());
         }
         else return false;
 
@@ -305,41 +316,41 @@ public class NetworkNodeBolt extends BaseRichBolt {
     }
 
     private boolean checkPort(int port){
-        int x = ports[port];
+        boolean blocked = state.getBlockedPort(port);
         /** if the entry in ports for this port is -1, then this port is blocked => drop */
 
-        if (x != -1 && !timeChecks){
-            portCount[port]++;
-            int y = portCount[port];
+        if (!blocked && !timeChecks){
+            state.incrementPortHitCount(port);
             /** This is a very basic rule to simulate the detection of an abnormal amount of traffic through a port
              * if 100 oackets have passed through that port the Configurator bolt is informed of the 'Unusual' traffic
              * @see NetworkConfiguratorBolt to see how it handles that
              *//*
+             * int y = portCount[port];
             if (y == 100){
                 report(1, port);
                 portCount[port] = 0;
             }*/
-        } else if (x == -1){
+        } else if (blocked){
             return false;
         }
         return true;
     }
 
-    private boolean checkIP(InetAddress addr){
-        if (blocked.contains(addr))
+    private boolean checkSrcIP(InetAddress addr){
+        if (state.isBlockedIpAddr(addr))
             return false;
-        else if(monitored.contains(addr)){
+        else if(state.isMonitoredIpAddr(addr)){
             report(4, addr);
         }
             return true;
 
     }
     private boolean checkFlags(boolean[] flags){
-        for (boolean[] sig : badFlags){
-            if (flags.equals(sig))
-                return false;
-        }
-        return true;
+        if (state.isBadFlag(flags))
+            return false;
+        else
+            return true;
+        // TODO add flag to flagcounts
     }
 
     /**
@@ -421,11 +432,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
         if(timeChecks)
             m.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, emitFrequencyInSeconds);
         m.put("ID", componentId);
-        m.put("BlockedPorts", ports);
-        m.put("PortHits", portCount);
-        m.put("BlockedIP", blocked);
-        m.put("BadFlags", badFlags);
         m.put("Verbosity", verbosity);
+        m.put("TimeChecks", timeChecks);
         return m;
     }
 }

@@ -20,6 +20,7 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.utils.Utils;
 
 /**
+ * @deprecated
  * @author atanaspam
  * @version 0.1
  * @created 08/11/2015
