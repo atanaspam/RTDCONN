@@ -42,9 +42,9 @@ public class NetworkTopology {
 
         builder.setBolt("node_0_lvl_1", new NetworkNodeBolt(), 2)                   // we have 2 high level bolts
                 .allGrouping("Controller", "Configure")
-                .shuffleGrouping("node_0_lvl_0", "IPPackets")                              // packets from the emitter are grouped by the destIP
+                .shuffleGrouping("node_0_lvl_0", "IPPackets")                       // packets from the emitter are grouped by the destIP
                 .shuffleGrouping("node_0_lvl_0", "TCPPackets")
-                .shuffleGrouping("node_0_lvl_0", "UDPPackets");                            // they receive approved packets from the low level bolts
+                .shuffleGrouping("node_0_lvl_0", "UDPPackets");                     // they receive approved packets from the low level bolts
 
         builder.setBolt("Controller", new NetworkConfiguratorBolt(), 1)             // we have 1 controller bolt
                 .allGrouping("node_0_lvl_0", "Reporting")                           // it receives all the reporting streams from

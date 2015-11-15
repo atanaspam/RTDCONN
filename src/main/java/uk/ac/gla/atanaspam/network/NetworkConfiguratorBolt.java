@@ -48,7 +48,6 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         commandHistory = new int[10];
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
-
         state = new ConfiguratorStateKeeper();
 
         Map<Integer, String> map = context.getTaskToComponent();
@@ -77,7 +76,6 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         int srcTasktId = (Integer) tuple.getValueByField("taskId");
         int anomalyType = (Integer) tuple.getValueByField("anomalyType");
         /** we check for all known error codes */
-        /* TODO Refactor so that codes are specified in a different class */
         switch (anomalyType){
             case 1:{   // 1 means lots of hits to a single port
                 Integer port = (Integer) tuple.getValueByField("anomalyData");
@@ -102,13 +100,11 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             case 2:{    /* 2 means hits to an unexpected port */
                 int port = (Integer)tuple.getValueByField("anomalyData");
                 //System.out.println("got "+ count + " form " + srcTasktId);
-                /* TODO implement */
                 state.addUnexpPortHit(port,srcTasktId);
                 break;
             }
             case 3:{    /* 3 means lots of hits to the same dest IP */
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                /* TODO implement */
                 state.addIpHit(ip,srcTasktId);
                 break;
             }
@@ -140,7 +136,6 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
                 state.addBadFlag(ip, srcTasktId);
             }
-            /* TODO implement more rules */
         }
         collector.ack(tuple);
     }
@@ -195,7 +190,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         }catch (Exception e){}
         boolean[][] badflags = {};
 
-        emitBulkConfig(lvl0, 10,1);
+        emitBulkConfig(lvl0, 10,3);
         emitBulkConfig(lvl1, 10,0);
         for(int port : blockedPorts)
             emitBulkConfig(all, 11, port);

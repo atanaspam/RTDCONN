@@ -59,7 +59,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
     public NetworkNodeBolt(int windowLengthInSeconds, int emitFrequencyInSeconds){
         packetsProcessed = 0;
-        verbosity = 1;
+        verbosity = 3;
         timeChecks = false;
         state = new StateKeeper();
 
@@ -71,8 +71,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 this.emitFrequencyInSeconds));
     }
 
-    public void prepare( Map conf, TopologyContext context, OutputCollector collector )
-    {
+    public void prepare( Map conf, TopologyContext context, OutputCollector collector ) {
         this.collector = collector;
         taskId = context.getThisTaskId();
         lastModifiedTracker = new NthLastModifiedTimeTracker(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
@@ -101,28 +100,21 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     continue;
                 }
             }
-            //TODO emit to configurator
-            //emit(counts, actualWindowLengthInSeconds);
         }
         state.setSrcIpHitCount(tempIpCount);
         state.setPortHitCount(portCounts);
+        for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet())
+            report(3, a.getKey());
+        for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet())
+            report(1, a.getKey());
     }
 
-    /*
-    private void emit(Map<Object, Long> counts, int actualWindowLengthInSeconds) {
-        for (Map.Entry<Object, Long> entry : counts.entrySet()) {
-            Object obj = entry.getKey();
-            Long count = entry.getValue();
-            collector.emit(new Values(obj, count, actualWindowLengthInSeconds));
-        }
-    }*/
-
-    public void execute( Tuple tuple )
-    {
+    public void execute( Tuple tuple ) {
         if (TupleUtils.isTick(tuple)) {
             //LOG.log(Level.INFO, "Received tick tuple, triggering emit of current window counts");
             if (timeChecks)
                 emitCurrentWindowCounts();
+            collector.ack(tuple);
         }else {
             try {
                 /** If data originates from theConfigure stream then it is some sort of new configuration */
@@ -221,6 +213,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
                         //System.out.println(state);
                         for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet())
                         report(3, a.getKey());
+                        for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet())
+                            report(1, a.getKey());
                         //TODO derive statistics from state
                         packetsProcessed = 0;
                     }
@@ -244,8 +238,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }
     }
 
-    public void declareOutputFields( OutputFieldsDeclarer declarer )
-    {
+    public void declareOutputFields( OutputFieldsDeclarer declarer ) {
         declarer.declareStream("Reporting", new Fields("taskId", "anomalyType", "anomalyData"));
         declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
         declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
@@ -254,24 +247,21 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
 
     private boolean performChecks(int code,GenericPacket packet){
-        /**
-         * TODO each check should depend on the "code"
-         */
         if (code == 0)
             return true;
         boolean status = true;
 
         if (packet.getType().equals("TCP")){
-            status = status & checkPort(packet.getDst_port());
-            status = status & checkSrcIP(packet.getSrc_ip());
-            status = status & checkFlags(packet.getFlags());
+            if (code >0)status = status & checkPort(packet.getDst_port());
+            if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
+            if (code >2)status = status & checkFlags(packet.getFlags());
         }
         else if (packet.getType().equals("UDP")){
-            status = status & checkPort(packet.getDst_port());
-            status = status & checkSrcIP(packet.getSrc_ip());
+            if (code >0)status = status & checkPort(packet.getDst_port());
+            if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
         }
         else if (packet.getType().equals("IPP")){
-            status = status & checkSrcIP(packet.getSrc_ip());
+            if (code >0)status = status & checkSrcIP(packet.getSrc_ip());
         }
         else return false;
 
