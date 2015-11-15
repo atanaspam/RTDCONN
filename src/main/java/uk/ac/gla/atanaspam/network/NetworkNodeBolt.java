@@ -14,8 +14,6 @@ import uk.ac.gla.atanaspam.network.utils.SlidingWindowCounter;
 import uk.ac.gla.atanaspam.network.utils.StateKeeper;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -48,23 +46,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private final int emitFrequencyInSeconds;
     private NthLastModifiedTimeTracker lastModifiedTracker;
     private StateKeeper state;
-    //Map<InetAddress, Long> currentIpCounts;
-    //Map<Integer, Long> currentPortCounts;
 
-
-    /** those fields store the rules under which the bolt currently operates */
-    /** ports is an array of 65535 ints and if ports[portNum] is -1 then traffic through this port is dropped **/
-    //int[] ports;
-
-    /** portCount is used to store the number of packets for a specific port so that portCount[portNum] will
-     * store the number of packets that have passed through this port */
-    //int[] portCount;
-
-    /** an arraylist of blocked IP addresses */
-    //ArrayList<InetAddress> blocked;
-    //ArrayList<InetAddress> monitored;
-    /** each boolean[] within badFlags represents a TCP packet'sflags */
-    //ArrayList<boolean[]> badFlags;
     GenericPacket packet;
     /** stores the current verbosity level of checks  This can be changed by a Configure message*/
     int verbosity;
@@ -78,15 +60,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
     }
 
     public NetworkNodeBolt(int windowLengthInSeconds, int emitFrequencyInSeconds){
-        /*
-        ports = new int[65535];
-        portCount = new int[65535];
-        blocked = new ArrayList<>();
-        monitored = new ArrayList<>();
-        badFlags = new ArrayList<>();
-        */
         packetsProcessed = 0;
-
         state = new StateKeeper();
 
         this.windowLengthInSeconds = windowLengthInSeconds;
@@ -120,6 +94,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         if (actualWindowLengthInSeconds != windowLengthInSeconds) {
             LOG.log(Level.WARNING, String.format(WINDOW_LENGTH_WARNING_TEMPLATE, actualWindowLengthInSeconds, windowLengthInSeconds));
             tempIpCount = ipCounts;
+            //System.out.println(tempIpCount);
         }else {
             for (Map.Entry<InetAddress, Long> a : ipCounts.entrySet()) {
                 try {
@@ -131,11 +106,11 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     continue;
                 }
             }
-            state.setSrcIpHitCount(tempIpCount);
-            state.setPortHitCount(portCounts);
             //TODO emit to configurator
             //emit(counts, actualWindowLengthInSeconds);
         }
+        state.setSrcIpHitCount(tempIpCount);
+        state.setPortHitCount(portCounts);
     }
     /*
     private void emit(Map<Object, Long> counts, int actualWindowLengthInSeconds) {
@@ -148,7 +123,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
     public void execute( Tuple tuple )
     {
-        if (TupleUtils.isTick(tuple)) {
+        if (TupleUtils.isTick(tuple) && timeChecks) {
             //LOG.log(Level.INFO, "Received tick tuple, triggering emit of current window counts");
             emitCurrentWindowCounts();
 
@@ -249,8 +224,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     packetsProcessed++;
                     if (packetsProcessed >= 6000 && !timeChecks){
                         System.out.println(state);
-                        state.resetCounts();
-                        //TODO do packet checks
+                        //TODO derive statistics from state
                         packetsProcessed = 0;
                     }
                 }
@@ -348,8 +322,13 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private boolean checkFlags(boolean[] flags){
         if (state.isBadFlag(flags))
             return false;
-        else
+        else {
+            for(int i=0; i<flags.length; i++){
+                if (flags[i])
+                    state.incrementFlagCount(i);
+            }
             return true;
+        }
         // TODO add flag to flagcounts
     }
 
@@ -429,8 +408,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
     @Override
     public Map<String,Object> getComponentConfiguration(){
         Map<String, Object> m = new HashMap<String, Object>();
-        if(timeChecks)
-            m.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, emitFrequencyInSeconds);
+        m.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, emitFrequencyInSeconds);
         m.put("ID", componentId);
         m.put("Verbosity", verbosity);
         m.put("TimeChecks", timeChecks);

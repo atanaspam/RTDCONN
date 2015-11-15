@@ -29,6 +29,8 @@ public class StateKeeper implements Serializable{
         destIpHitCount = new HashMap<>();
         portHitCount = new HashMap<>();
         flagCount = new Long[9];
+        for(int i=0;i<9;i++)
+            flagCount[i] = new Long(0);
     }
 
     public void setBlockedPort(int port, boolean value){
@@ -101,8 +103,8 @@ public class StateKeeper implements Serializable{
         this.portHitCount = portHitCount;
     }
 
-    public void addFlagCount(int flag){
-        flagCount[flag]++;
+    public void incrementFlagCount(int flag){
+        flagCount[flag] = flagCount[flag] +1;
     }
 
     public void clearFlagCount(int flag){
