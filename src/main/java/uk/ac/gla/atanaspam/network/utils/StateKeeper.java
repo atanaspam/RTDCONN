@@ -71,12 +71,28 @@ public class StateKeeper implements Serializable{
         return blockedFlags.remove(flag);
     }
 
+    public void incrementSrcIpHitCount(InetAddress addr){
+        if(srcIpHitCount.get(addr) != null){
+            srcIpHitCount.put(addr, srcIpHitCount.get(addr)+1);
+        } else{
+            srcIpHitCount.put(addr, new Long(1));
+        }
+    }
+
     public Map<InetAddress, Long> getSrcIpHitCount() {
         return srcIpHitCount;
     }
 
     public void setSrcIpHitCount(Map<InetAddress, Long> srcIpHitCount) {
         this.srcIpHitCount = srcIpHitCount;
+    }
+
+    public void incrDesrIpHitCount(InetAddress addr){
+        if(destIpHitCount.get(addr) != null){
+            destIpHitCount.put(addr, destIpHitCount.get(addr)+1);
+        } else{
+            destIpHitCount.put(addr, new Long(1));
+        }
     }
 
     public Map<InetAddress, Long> getDestIpHitCount() {
@@ -141,6 +157,10 @@ public class StateKeeper implements Serializable{
         for(int i=0; i<9;i++)
             flagCount[i] = new Long(0);
         return true;
+    }
+
+    public void obtainStatistics(){
+        
     }
 
     @Override

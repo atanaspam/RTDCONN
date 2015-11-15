@@ -316,7 +316,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
         else if(state.isMonitoredIpAddr(addr)){
             report(4, addr);
         }
-            return true;
+        state.incrementSrcIpHitCount(addr);
+        return true;
 
     }
     private boolean checkFlags(boolean[] flags){
