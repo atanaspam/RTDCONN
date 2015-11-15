@@ -75,7 +75,7 @@ public class MetricsConsumer implements IMetricsConsumer{
     }
 
     @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) { //TODO componentID should be taskID
+    public void declareOutputFields(OutputFieldsDeclarer declarer) { componentID must be taskId
         declarer.declareStream("Reporting", new Fields("componentId", "anomalyType", "anomalyData"));
     }
     */

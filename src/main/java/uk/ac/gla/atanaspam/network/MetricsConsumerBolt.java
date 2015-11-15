@@ -22,7 +22,7 @@ public class MetricsConsumerBolt implements IBolt {
     OutputCollector _collector;
     Object _registrationArgument;
 
-    public MetricsConsumerBolt(Object registrationArgument) { //TODO this should be new Properties()
+    public MetricsConsumerBolt(Object registrationArgument) {
         _registrationArgument = registrationArgument;
     }
 
