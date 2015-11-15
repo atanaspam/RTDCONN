@@ -160,7 +160,7 @@ public class StateKeeper implements Serializable{
     }
 
     public void obtainStatistics(){
-        
+        //TODO generate statistics
     }
 
     @Override

@@ -34,7 +34,7 @@ public class PacketSpout extends BaseRichSpout {
     @Override
     public void nextTuple()
     {
-        Utils.sleep(300);
+        //Utils.sleep(300);
         BasicPacket packet = p.getPacket();
         if(packet instanceof TCPPacket){
             TCPPacket packet1 = (TCPPacket) packet;

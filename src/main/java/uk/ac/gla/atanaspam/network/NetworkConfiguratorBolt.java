@@ -12,7 +12,6 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * This bolt listens for events from all the other bolts and pushes new configurations to them accordingly
@@ -23,7 +22,7 @@ import java.util.Objects;
 public class NetworkConfiguratorBolt extends BaseRichBolt {
 
     private OutputCollector collector;
-    int componentId;
+    int taskId;
     boolean changed, changed1; // this is a temp field to restrict the software from blocking all ports (block only the first port)
     int[] commandHistory;
     TopologyContext context;
@@ -41,7 +40,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     {
         this.collector = collector;
         this.context = context;
-        componentId = context.getThisTaskId();
+        taskId = context.getThisTaskId();
         changed = changed1 = false;
         commandHistory = new int[10];
         lvl0 = new ArrayList<>();
@@ -64,7 +63,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     public void execute( Tuple tuple )
     {
         /** obtain the message from a bolt */
-        int srcComponentId = (Integer) tuple.getValueByField("componentId");
+        int srcTasktId = (Integer) tuple.getValueByField("taskId");
         int anomalyType = (Integer) tuple.getValueByField("anomalyType");
         /** we check for all known error codes */
         /* TODO Refactor so that codes are specified in a different class */
@@ -74,7 +73,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 if (changed == false) {
                     // 11 is the code to add port to list of blocked ports
                     int code = 11;
-                    if (lvl0.contains(srcComponentId)) {
+                    if (lvl0.contains(srcTasktId)) {
                         emitBulkConfig(lvl1, code, port);
                     } else{
                         emitBulkConfig(lvl0, code, port);
@@ -87,7 +86,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             }
             case 2:{    /* 2 means hits to an unexpected port */
                 int count = (Integer)tuple.getValueByField("anomalyData");
-                System.out.println("got "+ count + " form " + srcComponentId);
+                System.out.println("got "+ count + " form " + srcTasktId);
                 /* TODO implement */
                 break;
             }
@@ -99,7 +98,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
                 if (changed1 == false) {
                     int code = 10; // 10 means change the general scanning pattern for that bolt
-                    if (lvl0.contains(srcComponentId)) {
+                    if (lvl0.contains(srcTasktId)) {
                         emitBulkConfig(lvl1, code, 1);
                         emitBulkConfig(lvl0, code, 0);
                     } else{
@@ -121,7 +120,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
 
     public void declareOutputFields( OutputFieldsDeclarer declarer )
     {
-        declarer.declareStream("Configure", new Fields("componentId", "code", "setting"));
+        declarer.declareStream("Configure", new Fields("taskId", "code", "setting"));
     }
 
     /**

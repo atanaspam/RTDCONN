@@ -23,13 +23,13 @@ import java.util.Map;
 public class NetworkAggregatorBolt extends BaseRichBolt {
 
     private OutputCollector collector;
-    int componentId;
+    int taskId;
     long packetCount;
 
     public void prepare( Map conf, TopologyContext context, OutputCollector collector )
     {
         this.collector = collector;
-        componentId = context.getThisTaskId();
+        taskId = context.getThisTaskId();
         packetCount = 0;
     }
 
@@ -41,12 +41,12 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
 
     public void declareOutputFields( OutputFieldsDeclarer declarer )
     {
-        declarer.declareStream("Reporting", new Fields("componentID", "anomalyType", "anomalyData"));
+        declarer.declareStream("Reporting", new Fields("taskId", "anomalyType", "anomalyData"));
     }
     @Override
     public Map<String,Object> getComponentConfiguration(){
         Map<String, Object> m = new HashMap<String, Object>();
-        m.put("ID", componentId);
+        m.put("ID", taskId);
         m.put("packetCount", packetCount);
         return m;
     }
