@@ -119,9 +119,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
     public void execute( Tuple tuple )
     {
-        if (TupleUtils.isTick(tuple) && timeChecks) {
+        if (TupleUtils.isTick(tuple)) {
             //LOG.log(Level.INFO, "Received tick tuple, triggering emit of current window counts");
-            emitCurrentWindowCounts();
+            if (timeChecks)
+                emitCurrentWindowCounts();
         }else {
             try {
                 /** If data originates from theConfigure stream then it is some sort of new configuration */
@@ -213,12 +214,13 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     /** Obtain the packet from the spout */
                     packet = obtainPacket(tuple);
                     if (packet == null) {
-                        System.out.println("Null packet");
                         return;
                     }
                     packetsProcessed++;
                     if (packetsProcessed >= 6000 && !timeChecks){
-                        System.out.println(state);
+                        //System.out.println(state);
+                        for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet())
+                        report(3, a.getKey());
                         //TODO derive statistics from state
                         packetsProcessed = 0;
                     }
@@ -279,14 +281,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
     private boolean checkPort(int port){
         boolean blocked = state.getBlockedPort(port);
-        /** if the entry in ports for this port is -1, then this port is blocked => drop */
+        /** if the entry in ports for this port is true, then this port is blocked => drop */
 
         if (!blocked && !timeChecks){
             state.incrementPortHitCount(port);
-            /** This is a very basic rule to simulate the detection of an abnormal amount of traffic through a port
-             * if 100 oackets have passed through that port the Configurator bolt is informed of the 'Unusual' traffic
-             * @see NetworkConfiguratorBolt to see how it handles that
-             */
         } else if (blocked){
             return false;
         }
@@ -363,7 +361,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
             return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP);
         }
-        System.out.println(tuple.getSourceStreamId());
+        LOG.log(Level.WARNING, "Recieved a message from "+ tuple.getSourceStreamId());
         return null;
     }
 

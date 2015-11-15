@@ -1,5 +1,6 @@
 package uk.ac.gla.atanaspam.network;
 
+import backtype.storm.Config;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -7,6 +8,8 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import backtype.storm.utils.TupleUtils;
+import uk.ac.gla.atanaspam.network.utils.ConfiguratorStateKeeper;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -26,11 +29,11 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     boolean changed, changed1; // this is a temp field to restrict the software from blocking all ports (block only the first port)
     int[] commandHistory;
     TopologyContext context;
+    ConfiguratorStateKeeper state;
 
     ArrayList<Integer> lvl0;
     ArrayList<Integer> lvl1;
     ArrayList<Integer> all;
-
 
     /**
      * This method prepares the configurator bolt by initializing all the appropriate fields and obtaining
@@ -45,6 +48,9 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         commandHistory = new int[10];
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
+
+        state = new ConfiguratorStateKeeper();
+
         Map<Integer, String> map = context.getTaskToComponent();
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
             if (entry.getValue().equals("node_0_lvl_0")) {
@@ -62,6 +68,11 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
 
     public void execute( Tuple tuple )
     {
+        if(TupleUtils.isTick(tuple)){
+            System.out.println(state);
+            //TODO emit config according to current stats
+            return;
+        }
         /** obtain the message from a bolt */
         int srcTasktId = (Integer) tuple.getValueByField("taskId");
         int anomalyType = (Integer) tuple.getValueByField("anomalyType");
@@ -70,6 +81,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         switch (anomalyType){
             case 1:{   // 1 means lots of hits to a single port
                 Integer port = (Integer) tuple.getValueByField("anomalyData");
+                /*
                 if (changed == false) {
                     // 11 is the code to add port to list of blocked ports
                     int code = 11;
@@ -82,20 +94,27 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 }
 
                 //System.out.println("Problem with port " + port); // for testing
+                */
+
+                state.addPortHit(port, srcTasktId);
                 break;
             }
             case 2:{    /* 2 means hits to an unexpected port */
-                int count = (Integer)tuple.getValueByField("anomalyData");
-                System.out.println("got "+ count + " form " + srcTasktId);
+                int port = (Integer)tuple.getValueByField("anomalyData");
+                //System.out.println("got "+ count + " form " + srcTasktId);
                 /* TODO implement */
+                state.addUnexpPortHit(port,srcTasktId);
                 break;
             }
             case 3:{    /* 3 means lots of hits to the same dest IP */
+                InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
                 /* TODO implement */
+                state.addIpHit(ip,srcTasktId);
                 break;
             }
             case 4:{    /* 4 means hits to an unexpected IP */
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
+                /*
                 if (changed1 == false) {
                     int code = 10; // 10 means change the general scanning pattern for that bolt
                     if (lvl0.contains(srcTasktId)) {
@@ -107,19 +126,26 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     }
                     changed1 = true;
                 }
+                */
+                state.addUnexpIpHit(ip,srcTasktId);
+                break;
             }
             case 5:{    /* 5 means a dropped packet */
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
+                state.addDropPacket(ip, srcTasktId);
                 //System.out.println("Dropped: " + ip.getHostAddress()); // for testing
                 break;
+            }
+            case 6: { /* anomalious flag trafic */
+                InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
+                state.addBadFlag(ip, srcTasktId);
             }
             /* TODO implement more rules */
         }
         collector.ack(tuple);
     }
 
-    public void declareOutputFields( OutputFieldsDeclarer declarer )
-    {
+    public void declareOutputFields( OutputFieldsDeclarer declarer ) {
         declarer.declareStream("Configure", new Fields("taskId", "code", "setting"));
     }
 
@@ -130,6 +156,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     @Override
     public Map<String,Object> getComponentConfiguration(){
         Map<String, Object> m = new HashMap<String, Object>();
+        m.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 60);
         m.put("History", commandHistory);
         return m;
     }
