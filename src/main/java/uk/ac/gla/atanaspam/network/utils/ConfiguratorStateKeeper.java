@@ -67,13 +67,13 @@ public class ConfiguratorStateKeeper implements Serializable{
         data.get(5).put(ip,a);
     }
 
-    public void addBadFlag(InetAddress ip, int taskId){
-        int[] a = data.get(6).get(ip);
+    public void addBadFlag(Integer n, int taskId){
+        int[] a = data.get(6).get(n);
         if (a == null){
             a = new int[6];
         }
         a[taskId-4]++;
-        data.get(6).put(ip,a);
+        data.get(6).put(n,a);
     }
 
     @Override

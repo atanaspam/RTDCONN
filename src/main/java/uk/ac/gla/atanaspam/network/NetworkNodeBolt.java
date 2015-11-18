@@ -215,6 +215,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
                         report(3, a.getKey());
                         for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet())
                             report(1, a.getKey());
+                        if (state.getFlagCount()[4] > 1000)
+                            report(6,4);
+                        if (state.getFlagCount()[5] > 1000)
+                            report(6,5);
                         //TODO derive statistics from state
                         packetsProcessed = 0;
                     }
