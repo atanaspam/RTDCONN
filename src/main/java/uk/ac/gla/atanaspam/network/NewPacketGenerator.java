@@ -13,7 +13,7 @@ import uk.ac.gla.atanaspam.pcapj.*;
 public class NewPacketGenerator {
     public static void main(String[] args) {
         PcapParser pcapParser = new PcapParser();
-        if(pcapParser.openFile("/Users/atanaspam/Desktop/DumpFile03.pcap") < 0){
+        if(pcapParser.openFile("/Users/atanaspam/Desktop/partial.pcap") < 0){
             System.err.println("Failed to open " + args[0] + ", exiting.");
             return;
         }

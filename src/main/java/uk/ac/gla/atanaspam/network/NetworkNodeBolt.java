@@ -16,8 +16,13 @@ import uk.ac.gla.atanaspam.network.utils.StateKeeper;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+
+//import org.apache.log4j.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * This bolt receives packets, performs basic checks on them and either forwards or drops them
@@ -30,7 +35,8 @@ import java.util.logging.Logger;
  */
 public class NetworkNodeBolt extends BaseRichBolt {
 
-    private static final Logger LOG = Logger.getLogger(NetworkNodeBolt.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkNodeBolt.class);
+
     private OutputCollector collector;
     int taskId;
 
@@ -47,8 +53,12 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private NthLastModifiedTimeTracker lastModifiedTracker;
     private StateKeeper state;
     GenericPacket packet;
-
+    /**
+     * Check verbosity indicates the level of checks to be performed
+     * 0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags
+     */
     int verbosity;
+    boolean gatherStatistics;
     boolean timeChecks;
     int packetsProcessed;
 
@@ -61,6 +71,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         packetsProcessed = 0;
         verbosity = 3;
         timeChecks = false;
+        gatherStatistics = false;
         state = new StateKeeper();
 
         this.windowLengthInSeconds = windowLengthInSeconds;
@@ -76,7 +87,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         taskId = context.getThisTaskId();
         lastModifiedTracker = new NthLastModifiedTimeTracker(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
                 this.emitFrequencyInSeconds));
-        System.out.println("Initialized task " + taskId + " from " + taskId + " with verbosity " + verbosity);
+        LOG.debug("Initialized task " + taskId + " from " + taskId + " with verbosity " + verbosity);
     }
 
     private void emitCurrentWindowCounts() {
@@ -87,14 +98,14 @@ public class NetworkNodeBolt extends BaseRichBolt {
         int actualWindowLengthInSeconds = lastModifiedTracker.secondsSinceOldestModification();
         lastModifiedTracker.markAsModified();
         if (actualWindowLengthInSeconds != windowLengthInSeconds) {
-            LOG.log(Level.FINE, String.format(WINDOW_LENGTH_WARNING_TEMPLATE, actualWindowLengthInSeconds, windowLengthInSeconds));
+            LOG.warn(String.format(WINDOW_LENGTH_WARNING_TEMPLATE, actualWindowLengthInSeconds, windowLengthInSeconds));
             tempIpCount = ipCounts;
         }else {
             for (Map.Entry<InetAddress, Long> a : ipCounts.entrySet()) {
                 try {
                     if (state.getSrcIpHitCount().get(a.getKey()) < a.getValue()) {
                         tempIpCount.put(a.getKey(), a.getValue());
-                        System.out.println(taskId + ": " + a.getKey() + " " + state.getSrcIpHitCount().get(a.getKey()) + "-" + a.getValue());
+                        LOG.info(taskId + ": " + a.getKey() + " " + state.getSrcIpHitCount().get(a.getKey()) + "-" + a.getValue());
                     }
                 } catch (NullPointerException e) {
                     continue;
@@ -111,9 +122,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
     public void execute( Tuple tuple ) {
         if (TupleUtils.isTick(tuple)) {
-            //LOG.log(Level.INFO, "Received tick tuple, triggering emit of current window counts");
-            if (timeChecks)
+            if (timeChecks) {
+                LOG.trace("Received tick tuple");
                 emitCurrentWindowCounts();
+            }
             collector.ack(tuple);
         }else {
             try {
@@ -138,63 +150,67 @@ public class NetworkNodeBolt extends BaseRichBolt {
                         case 10: { // means push new check verbosity
                             int newVerb = (Integer) tuple.getValueByField("setting");
                             verbosity = newVerb;
-                            System.out.println(taskId + " Chnaged check-verbosity for " + taskId + " to " + newVerb); // for debugging
+                            LOG.debug(taskId + " Chnaged check-verbosity for " + taskId + " to " + newVerb); // for debugging
                             break;
                         }
                         case 11: { // means push new port to blacklist
                             int newPort = (Integer) tuple.getValueByField("setting");
                             state.setBlockedPort(newPort, true);
                             //TODO clear current Port HitCount if necesary
-                            System.out.println(taskId + " Added port " + newPort + " to blacklist"); // for debugging
+                            LOG.debug(taskId + " Added port " + newPort + " to blacklist"); // for debugging
                             break;
                         }
                         case 12: { // means remove a port from blacklist
                             int newPort = (Integer) tuple.getValueByField("setting");
                             state.setBlockedPort(newPort, false);
                             //TODO clear current Port HitCount if necesary
-                            System.out.println(taskId + " Removed port " + newPort + " from blacklist"); // for debugging
+                            LOG.debug(taskId + " Removed port " + newPort + " from blacklist"); // for debugging
                             break;
                         }
                         case 13:{ // means add new IP to blacklist
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
                             state.addBlockedIpAddr(newAddr);
-                            System.out.println(taskId + " Added " + newAddr.getHostAddress() + " to blacklist"); // for debugging
+                            LOG.debug(taskId + " Added " + newAddr.getHostAddress() + " to blacklist"); // for debugging
                             break;
                         }
                         case 14: { // means remove IP from blacklist
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
                             state.removeBlockedIpAddr(newAddr);
-                            System.out.println(taskId + " Removed " + newAddr.getHostAddress() + " from blacklist"); // for debugging
+                            LOG.debug(taskId + " Removed " + newAddr.getHostAddress() + " from blacklist"); // for debugging
                             break;
                         }
                         case 15:{ // means add new IP to monitored
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
                             state.addMonitoredIpAddr(newAddr);
-                            System.out.println(taskId + " Added " + newAddr.getHostAddress() + " to monitored"); // for debugging
+                            LOG.debug(taskId + " Added " + newAddr.getHostAddress() + " to monitored"); // for debugging
                             break;
                         }
                         case 16: { // means remove IP from monitored
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
                             state.removeMonitoredIpAddr(newAddr);
-                            System.out.println(taskId + " Removed " + newAddr.getHostAddress() + " from monitored"); // for debugging
+                            LOG.debug(taskId + " Removed " + newAddr.getHostAddress() + " from monitored"); // for debugging
                             break;
                         }
                         case 17: { // add new flag to blocked
                             boolean[] newFlags = (boolean[]) tuple.getValueByField("setting");
                             state.addBlockedFlag(newFlags);
-                            System.out.println(taskId + " Added new flags to blocked"); // for debugging
+                            LOG.debug(taskId + " Added new flags to blocked"); // for debugging
                             break;
                         }
                         case 18: { // means remove flag from flags
                             boolean[] newFlags = (boolean[]) tuple.getValueByField("setting");
                             state.removeBlockedFlag(newFlags);
-                            System.out.println(taskId + " Removed flags from blocked"); // for debugging
+                            LOG.debug(taskId + " Removed flags from blocked"); // for debugging
                             break;
                         }
                         case 19: { // set timecheck value
-                            boolean timecheck = (boolean) tuple.getValueByField("setting");
-                            timeChecks = timecheck;
-                            System.out.println(taskId + " Set timeChecks to " + timeChecks); // for debugging
+                            timeChecks = (boolean) tuple.getValueByField("setting");
+                            LOG.debug(taskId + " Set timeChecks to " + timeChecks); // for debugging
+                            break;
+                        }
+                        case 20: { // set gatherStaistics value
+                            gatherStatistics = (boolean) tuple.getValueByField("setting");
+                            LOG.debug(taskId + " Set gatherStatistics to " + gatherStatistics); // for debugging
                             break;
                         }
 
@@ -210,7 +226,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     }
                     packetsProcessed++;
                     if (packetsProcessed >= 6000 && !timeChecks){
-                        //System.out.println(state);
+                        //LOG.info(state);
                         for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet())
                         report(3, a.getKey());
                         for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet())
@@ -225,20 +241,23 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 }
 
             } catch (Exception e) {
-                LOG.log(Level.SEVERE, "An exception occured during bolt "+ taskId + "execution");
+                LOG.error("An exception occured during bolt "+ taskId + "execution", e);
                 collector.reportError(e);
             }
             /** Invoke performChecks() on each packet that is received
              * if performChecks returns true the packet is allowed to pass, else it is just dropped
              * */
+
             if (performChecks(verbosity, packet)) {
                 send(packet);
             } else {
                 report(5, packet.getSrc_ip());
             }
+            if (gatherStatistics) {
+                ipCounter.incrementCount(packet.getSrc_ip());
+                portCounter.incrementCount(packet.getDst_port());
+            }
             collector.ack(tuple);
-            ipCounter.incrementCount(packet.getSrc_ip());
-            portCounter.incrementCount(packet.getDst_port());
         }
     }
 
@@ -284,6 +303,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }
         return true;
     }
+
 
     private boolean checkSrcIP(InetAddress addr){
         if (state.isBlockedIpAddr(addr))
@@ -355,7 +375,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
             return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP);
         }
-        LOG.log(Level.WARNING, "Recieved a message from "+ tuple.getSourceStreamId());
+        LOG.trace("Recieved a message from "+ tuple.getSourceStreamId());
         return null;
     }
 
@@ -386,6 +406,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         m.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, emitFrequencyInSeconds);
         m.put("ID", taskId);
         m.put("Verbosity", verbosity);
+        m.put("Statistics", gatherStatistics);
         m.put("TimeChecks", timeChecks);
         return m;
     }
