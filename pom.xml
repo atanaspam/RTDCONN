@@ -110,7 +110,13 @@
         <dependency>
             <groupId>com.github.atanaspam</groupId>
             <artifactId>pcapj</artifactId>
-            <version>2a1201e</version>
+            <version>912a3e4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>commons-collections</groupId>
