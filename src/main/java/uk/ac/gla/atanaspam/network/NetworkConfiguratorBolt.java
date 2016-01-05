@@ -33,6 +33,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
 
     ArrayList<Integer> lvl0;
     ArrayList<Integer> lvl1;
+    ArrayList<Integer> lvl2;
     ArrayList<Integer> all;
 
     /**
@@ -48,6 +49,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         commandHistory = new int[10];
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
+        lvl2 = new ArrayList<>();
         state = new ConfiguratorStateKeeper();
 
         Map<Integer, String> map = context.getTaskToComponent();
@@ -57,6 +59,9 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             }
             if (entry.getValue().equals("node_0_lvl_1")) {
                 lvl1.add(entry.getKey());
+            }
+            if (entry.getValue().equals("node_0_lvl_2")) {
+                lvl2.add(entry.getKey());
             }
         }
         all = new ArrayList<>();
@@ -79,22 +84,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         switch (anomalyType){
             case 1:{   // 1 means lots of hits to a single port
                 Integer port = (Integer) tuple.getValueByField("anomalyData");
-                /*
-                if (changed == false) {
-                    // 11 is the code to add port to list of blocked ports
-                    int code = 11;
-                    if (lvl0.contains(srcTasktId)) {
-                        emitBulkConfig(lvl1, code, port);
-                    } else{
-                        emitBulkConfig(lvl0, code, port);
-                    }
-                    changed = true;
-                }
-
-                //System.out.println("Problem with port " + port); // for testing
-                */
-
                 state.addPortHit(port, srcTasktId);
+                //System.out.println("Problem with port " + port); // for testing
                 break;
             }
             case 2:{    /* 2 means hits to an unexpected port */
@@ -110,19 +101,6 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             }
             case 4:{    /* 4 means hits to an unexpected IP */
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                /*
-                if (changed1 == false) {
-                    int code = 10; // 10 means change the general scanning pattern for that bolt
-                    if (lvl0.contains(srcTasktId)) {
-                        emitBulkConfig(lvl1, code, 1);
-                        emitBulkConfig(lvl0, code, 0);
-                    } else{
-                        emitBulkConfig(lvl1, code, 0);
-                        emitBulkConfig(lvl0, code, 1);
-                    }
-                    changed1 = true;
-                }
-                */
                 state.addUnexpIpHit(ip,srcTasktId);
                 break;
             }
@@ -133,8 +111,9 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 break;
             }
             case 6: { /* anomalious flag trafic */
-                InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                state.addBadFlag(ip, srcTasktId);
+                //InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
+                int port = (Integer) tuple.getValueByField("anomalyData");
+                state.addBadFlag(port, srcTasktId);
             }
         }
         collector.ack(tuple);
@@ -190,8 +169,11 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         }catch (Exception e){}
         boolean[][] badflags = {};
 
-        emitBulkConfig(lvl0, 10,3);
-        emitBulkConfig(lvl1, 10,0);
+        //emitBulkConfig(lvl0, 20, false); (this is default)   // top level does not gather statistics
+        emitBulkConfig(lvl0, 10, 0);        // top level perfroms no checks
+        emitBulkConfig(lvl1, 10,3);
+        emitBulkConfig(lvl2, 20, true);
+        emitBulkConfig(lvl2, 10, 0);
         for(int port : blockedPorts)
             emitBulkConfig(all, 11, port);
         for(InetAddress ip : blockedIP)

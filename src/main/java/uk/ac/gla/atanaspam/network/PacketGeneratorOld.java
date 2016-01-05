@@ -16,7 +16,7 @@ import java.util.Random;
  * @created 04/10/2015
  * @version 0.1
  */
-public class PacketGenerator {
+public class PacketGeneratorOld {
 
     PcapParser pcapParser;
     String filePath;
@@ -26,7 +26,7 @@ public class PacketGenerator {
     /**
      * This constructor initializes the pcapj library, reads the static dump of packets and saves them to an arraylist
      */
-    public PacketGenerator() {
+    public PacketGeneratorOld() {
         pcapParser = new PcapParser();
         list = new ArrayList<BasicPacket>();
         generator = new Random();
