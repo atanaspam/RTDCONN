@@ -5,3 +5,4 @@ output.out
 logfile*
 /bin
 /.idea
+/partial.pcap

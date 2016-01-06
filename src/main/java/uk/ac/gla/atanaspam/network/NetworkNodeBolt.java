@@ -150,7 +150,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                         case 10: { // means push new check verbosity
                             int newVerb = (Integer) tuple.getValueByField("setting");
                             verbosity = newVerb;
-                            LOG.debug(taskId + " Chnaged check-verbosity for " + taskId + " to " + newVerb); // for debugging
+                            LOG.debug(taskId + " Changed check-verbosity to " + newVerb); // for debugging
                             break;
                         }
                         case 11: { // means push new port to blacklist

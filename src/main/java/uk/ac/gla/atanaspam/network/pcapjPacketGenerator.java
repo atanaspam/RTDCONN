@@ -10,7 +10,7 @@ import uk.ac.gla.atanaspam.pcapj.*;
  * @version 0.1
  */
 
-public class NewPacketGenerator {
+public class pcapjPacketGenerator {
     public static void main(String[] args) {
         PcapParser pcapParser = new PcapParser();
         if(pcapParser.openFile("/Users/atanaspam/Desktop/partial.pcap") < 0){
