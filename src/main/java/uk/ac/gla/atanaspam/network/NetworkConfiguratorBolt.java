@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This bolt listens for events from all the other bolts and pushes new configurations to them accordingly
+ * Listens for events reported from other bolts and pushes new configurations to them accordingly
  * @author atanaspam
  * @created 06/10/2015
  * @version 0.1
@@ -26,7 +26,6 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
 
     private OutputCollector collector;
     int taskId;
-    boolean changed, changed1; // this is a temp field to restrict the software from blocking all ports (block only the first port)
     int[] commandHistory;
     TopologyContext context;
     ConfiguratorStateKeeper state;
@@ -37,7 +36,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     ArrayList<Integer> all;
 
     /**
-     * This method prepares the configurator bolt by initializing all the appropriate fields and obtaining
+     * Prepares the configurator bolt by initializing all the appropriate fields and obtaining
      * awareness over the rest of the topology.
      */
     public void prepare( Map conf, TopologyContext context, OutputCollector collector )
@@ -45,7 +44,6 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         this.collector = collector;
         this.context = context;
         taskId = context.getThisTaskId();
-        changed = changed1 = false;
         commandHistory = new int[10];
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
@@ -67,7 +65,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         all = new ArrayList<>();
         all.addAll(lvl0);
         all.addAll(lvl1);
-        intialConfig();
+        initialConfig();
     }
 
     public void execute( Tuple tuple )
@@ -124,7 +122,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     }
 
     /**
-     * This method is used to obtain the current configuration and state of this bolt
+     * Obtains the current configuration and state of the bolt.
      * @return a String|Object map of all the configs
      */
     @Override
@@ -136,10 +134,10 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     }
 
     /**
-     * This method emits a a command to a specific bolt only
+     * Emits a a command to a specific bolt only.
      * @param dest the taskID that needs to change its config
-     * @param code the command to be executed
-     * @param setting the new value
+     * @param code code for the command to be executed
+     * @param setting the new value (command specific)
      */
     public void emitConfig(int dest, int code, Object setting){
         collector.emit("Configure", new Values(dest, code, setting));
@@ -148,10 +146,10 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     }
 
     /**
-     * This method emits a command to each of the bolts within a specific group
+     * Emits a command to each of the bolts within a specific group.
      * @param target an arraylist storing the taskID's of each bolt to be addressed
-     * @param code the command to be executed
-     * @param setting the new value
+     * @param code code for the command to be executed
+     * @param setting the new value (command specific)
      */
     private void emitBulkConfig(ArrayList<Integer> target, int code, Object setting){
         for (int n: target){
@@ -159,7 +157,11 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         }
     }
 
-    public void intialConfig(){
+    /**
+     * Performs the initial configuration of the bolts in the topology
+     * and can be used to restore all the configuration to its default state.
+     */
+    public void initialConfig(){
         int[] blockedPorts = {};
         ArrayList<InetAddress> blockedIP = new ArrayList<>();
         ArrayList<InetAddress> monitoredIP = new ArrayList<>();

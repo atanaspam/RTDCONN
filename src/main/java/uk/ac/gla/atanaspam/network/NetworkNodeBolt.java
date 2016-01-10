@@ -17,9 +17,6 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-
-//import org.apache.log4j.Logger;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,11 +59,18 @@ public class NetworkNodeBolt extends BaseRichBolt {
     boolean timeChecks;
     int packetsProcessed;
 
-
+    /**
+     * Initializes a NetworkNodeBolt with default slidingWindow settings
+     */
     public NetworkNodeBolt(){
         this(DEFAULT_SLIDING_WINDOW_IN_SECONDS, DEFAULT_EMIT_FREQUENCY_IN_SECONDS);
     }
 
+    /**
+     * Initializes a NetworkNodeBolt with the specified slidingWindow settings
+     * @param windowLengthInSeconds length of the sliding window
+     * @param emitFrequencyInSeconds the frequency in which results are emitted
+     */
     public NetworkNodeBolt(int windowLengthInSeconds, int emitFrequencyInSeconds){
         packetsProcessed = 0;
         verbosity = 3;
@@ -90,6 +94,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
         LOG.debug("Initialized task " + taskId + " from " + taskId + " with verbosity " + verbosity);
     }
 
+    /**
+     * Updates the data stored in the StateKeeper dataStructure and emits the data
+     * to the NetworkConfuguratorBolt
+     */
     private void emitCurrentWindowCounts() {
         Map<InetAddress, Long> ipCounts = ipCounter.getCountsThenAdvanceWindow();
         Map<Integer, Long> portCounts = portCounter.getCountsThenAdvanceWindow();
@@ -268,7 +276,12 @@ public class NetworkNodeBolt extends BaseRichBolt {
         declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "Flags"));
     }
 
-
+    /**
+     * Performs checks upon a packet instance depending on the verbosity specified
+     * @param code an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
+     * @param packet the packet instance to be inspected
+     * @return true if all the checks succeed, false otherwise
+     */
     private boolean performChecks(int code,GenericPacket packet){
         if (code == 0)
             return true;
@@ -276,26 +289,29 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
         if (packet.getType().equals("TCP")){
             if (code >0)status = status & checkPort(packet.getDst_port());
-            if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
+            if (code >1)status = status & checkIP(packet.getSrc_ip());
             if (code >2)status = status & checkFlags(packet.getFlags());
         }
         else if (packet.getType().equals("UDP")){
             if (code >0)status = status & checkPort(packet.getDst_port());
-            if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
+            if (code >1)status = status & checkIP(packet.getSrc_ip());
         }
         else if (packet.getType().equals("IPP")){
-            if (code >0)status = status & checkSrcIP(packet.getSrc_ip());
+            if (code >0)status = status & checkIP(packet.getSrc_ip());
         }
         else return false;
 
         return status;
-
     }
 
+    /**
+     * Check a port number against the rules specified for the bolt
+     * @param port the port to be checked
+     * @return true if no problem is detected, false otherwise
+     */
     private boolean checkPort(int port){
         boolean blocked = state.getBlockedPort(port);
         /** if the entry in ports for this port is true, then this port is blocked => drop */
-
         if (!blocked && !timeChecks){
             state.incrementPortHitCount(port);
         } else if (blocked){
@@ -304,8 +320,12 @@ public class NetworkNodeBolt extends BaseRichBolt {
         return true;
     }
 
-
-    private boolean checkSrcIP(InetAddress addr){
+    /**
+     * Check an IP address against the rules specified for the bolt
+     * @param addr the IP address to be checked
+     * @return true if no problem is detected, false otherwise
+     */
+    private boolean checkIP(InetAddress addr){
         if (state.isBlockedIpAddr(addr))
             return false;
         else if(state.isMonitoredIpAddr(addr)){
@@ -315,6 +335,12 @@ public class NetworkNodeBolt extends BaseRichBolt {
         return true;
 
     }
+
+    /**
+     * Check a set of flags against the rules specified for the bolt
+     * @param flags the flags to be checked
+     * @return true if no problem is detected, false otherwise
+     */
     private boolean checkFlags(boolean[] flags){
         if (state.isBadFlag(flags))
             return false;
@@ -328,17 +354,17 @@ public class NetworkNodeBolt extends BaseRichBolt {
     }
 
     /**
-     * This method is invoked in order to report some type of error or event to the Configurator bolt.
-     * @param type
-     * @param descr
+     * Report some type of error or event to the Configurator bolt.
+     * @param type the code representing the event type
+     * @param descr the value for the event if applicable
      */
     private void report(int type, Object descr){
         collector.emit("Reporting", new Values(taskId, type, descr));
     }
 
     /**
-     *
-     * @param tuple
+     * Reads the contents of a tuple and creates a Generic Packet instance depending on the packet type
+     * @param tuple the tuple received by the bolt
      */
     private GenericPacket obtainPacket(Tuple tuple) {
         /** if the packet originates from the TCPPackets Stream its a TCPPacket
@@ -375,10 +401,14 @@ public class NetworkNodeBolt extends BaseRichBolt {
             InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
             return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP);
         }
-        LOG.trace("Recieved a message from "+ tuple.getSourceStreamId());
+        LOG.trace("Received a message from "+ tuple.getSourceStreamId());
         return null;
     }
 
+    /**
+     * Emits a packet on a stream depending on its type
+     * @param packet the Generic Packet instance to be emitted
+     */
     private void send(GenericPacket packet){
         if(packet.getType().equals("TCP")){
             collector.emit("TCPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),

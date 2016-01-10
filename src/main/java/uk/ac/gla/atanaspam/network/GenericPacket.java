@@ -41,8 +41,15 @@ public class GenericPacket extends IPPacket implements Serializable{
     public String getType(){return type; }
 
 
+
+
     /**
-     * A constructor to create a generic packet out of and IPPacket
+     * Initializes a Generic Packet instance out of the fields of an IPPacket.
+     * @param timestamp
+     * @param srcMAC
+     * @param destMAC
+     * @param srcIP
+     * @param dstIP
      */
     public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP) {
 
@@ -52,7 +59,15 @@ public class GenericPacket extends IPPacket implements Serializable{
     }
 
     /**
-     * A constructor to create a generic packet out of and TCPPacket
+     * Initializes a Generic Packet instance out of the fields of an TCPacket.
+     * @param timestamp
+     * @param srcMAC
+     * @param destMAC
+     * @param srcIP
+     * @param dstIP
+     * @param src_port
+     * @param dst_port
+     * @param flags
      */
     public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP, int src_port, int dst_port, boolean[] flags) {
 
@@ -63,8 +78,16 @@ public class GenericPacket extends IPPacket implements Serializable{
         this.type = "TCP";
 
     }
+
     /**
-     * A constructor to create a generic packet out of and UDPPacket
+     * Initializes a Generic Packet instance out of the fields of an UDPacket.
+     * @param timestamp
+     * @param srcMAC
+     * @param destMAC
+     * @param srcIP
+     * @param dstIP
+     * @param src_port
+     * @param dst_port
      */
     public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP, int src_port, int dst_port) {
 
@@ -76,8 +99,8 @@ public class GenericPacket extends IPPacket implements Serializable{
     }
 
     /**
-     * This method prints the corresponding information depending on the actual data within the packet
-     * @return
+     * Returns a string representation of a Generic Packet depending on the actual packet type
+     * @return The String representation
      */
     public String toString(){
         if (type.equals("IPP")){
