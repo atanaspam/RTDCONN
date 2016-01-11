@@ -23,6 +23,12 @@ public class NetworkTopology {
 
     private static final int DEFAULT_RUNTIME_IN_SECONDS = 60;
     private static final int TOP_N = 5;
+    private static final int NUM_SPOUTS = 2;
+    private static final int NUM_CONTROLLERS = 1;
+    private static final int NUM_LVL0_BOLTS = 2;
+    private static final int NUM_LVL1_BOLTS = 4;
+    private static final int NUM_LVL2_BOLTS = 8;
+    private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS;
 
     public static void main(String[] args)
     {
@@ -31,28 +37,28 @@ public class NetworkTopology {
 
         /***                        Topology Configuration                  ***/
 
-        builder.setSpout("spout", new PacketSpout(), 2 );//TODO fix to 4                               // we have 4 packet emitters
+        builder.setSpout("spout", new PacketSpout(), NUM_SPOUTS );//TODO fix to 4                               // we have 4 packet emitters
 
 
-        builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(), 2 )                      // we have 2 low level Bolts
+        builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(), NUM_LVL0_BOLTS )                      // we have 2 low level Bolts
                 .allGrouping("Controller", "Configure")                                 // each one receives everything from the configurator
                 .fieldsGrouping("spout", "IPPackets", new Fields("destIP"))             // packets from the emitter are grouped by the destIP
                 .fieldsGrouping("spout", "TCPPackets", new Fields("destIP"))
                 .fieldsGrouping("spout", "UDPPackets", new Fields("destIP"));
 
-        builder.setBolt("node_0_lvl_1", new NetworkNodeBolt(), 4)                       // we have 3 mid level bolts
+        builder.setBolt("node_0_lvl_1", new NetworkNodeBolt(), NUM_LVL1_BOLTS)                       // we have 3 mid level bolts
                 .allGrouping("Controller", "Configure")
                 .fieldsGrouping("node_0_lvl_0", "IPPackets", new Fields("destIP"))      // packets from the emitter are grouped by the destIP
                 .fieldsGrouping("node_0_lvl_0", "TCPPackets", new Fields("destIP"))
                 .fieldsGrouping("node_0_lvl_0", "UDPPackets", new Fields("destIP"));    // they receive approved packets from the low level bolts
 
-        builder.setBolt("node_0_lvl_2", new NetworkNodeBolt(), 8)                       // we have 8 high level bolts
+        builder.setBolt("node_0_lvl_2", new NetworkNodeBolt(), NUM_LVL2_BOLTS)                       // we have 8 high level bolts
                 .allGrouping("Controller", "Configure")
                 .fieldsGrouping("node_0_lvl_0", "IPPackets", new Fields("destIP"))      // packets from the emitter are grouped by the destIP
                 .fieldsGrouping("node_0_lvl_0", "TCPPackets", new Fields("destIP"))
                 .fieldsGrouping("node_0_lvl_0", "UDPPackets", new Fields("destIP"));    // they receive approved packets from the mid level bolts
 
-        builder.setBolt("Controller", new NetworkConfiguratorBolt(), 1)                 // we have 1 controller bolt
+        builder.setBolt("Controller", new NetworkConfiguratorBolt(), NUM_CONTROLLERS)                 // we have 1 controller bolt
                 .allGrouping("node_0_lvl_0", "Reporting")                               // it receives all the reporting streams from
                 .allGrouping("node_0_lvl_1", "Reporting")
                 .allGrouping("node_0_lvl_2", "Reporting");                              // the high and low level bolts
@@ -67,6 +73,7 @@ public class NetworkTopology {
 
         Config conf = new Config();
         conf.put("timecheck", false);
+        conf.put("boltNum", (int) NUM_BOLTS);
         //TODO add .pcap file path here and get it as an arg in args
         conf.registerSerialization(StateKeeper.class);
         LocalCluster cluster = new LocalCluster();

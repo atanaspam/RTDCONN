@@ -12,20 +12,20 @@ import java.util.*;
 public class ConfiguratorStateKeeper implements Serializable{
 
     private ArrayList<HashMap<Object, int[]>> data;
-    private final int NUM_NODES = 6;
+    private int numOfBolts;
 
-    public ConfiguratorStateKeeper(){
+    public ConfiguratorStateKeeper(int numOfBolts){
+        this.numOfBolts = numOfBolts;
         this.data = new ArrayList<>(10);
         for (int i=0; i<10;i++){
             this.data.add(i, new HashMap<Object, int[]>());
         }
-        System.out.println(data);
     }
 
     public void addPortHit(int port, int taskId){
         int[] a = data.get(1).get(port);
         if (a == null){
-            a = new int[6];
+            a = new int[numOfBolts];
         }
         a[taskId-4]++;
         data.get(1).put(port,a);
@@ -34,7 +34,7 @@ public class ConfiguratorStateKeeper implements Serializable{
     public void addUnexpPortHit(int port, int taskId){
         int[] a = data.get(2).get(port);
         if (a == null){
-            a = new int[6];
+            a = new int[numOfBolts];
         }
         a[taskId-4]++;
         data.get(2).put(port,a);
@@ -43,7 +43,7 @@ public class ConfiguratorStateKeeper implements Serializable{
     public void addIpHit(InetAddress ip, int taskId){
         int[] a = data.get(3).get(ip);
         if (a == null){
-            a = new int[6];
+            a = new int[numOfBolts];
         }
         a[taskId-4]++;
         data.get(3).put(ip,a);
@@ -52,7 +52,7 @@ public class ConfiguratorStateKeeper implements Serializable{
     public void addUnexpIpHit(InetAddress ip, int taskId){
         int[] a = data.get(4).get(ip);
         if (a == null){
-            a = new int[6];
+            a = new int[numOfBolts];
         }
         a[taskId-4]++;
         data.get(4).put(ip,a);
@@ -61,7 +61,7 @@ public class ConfiguratorStateKeeper implements Serializable{
     public void addDropPacket(InetAddress ip, int taskId){
         int[] a = data.get(5).get(ip);
         if (a == null){
-            a = new int[6];
+            a = new int[numOfBolts];
         }
         a[taskId-4]++;
         data.get(5).put(ip,a);
@@ -70,7 +70,7 @@ public class ConfiguratorStateKeeper implements Serializable{
     public void addBadFlag(Integer n, int taskId){
         int[] a = data.get(6).get(n);
         if (a == null){
-            a = new int[6];
+            a = new int[numOfBolts];
         }
         a[taskId-4]++;
         data.get(6).put(n,a);

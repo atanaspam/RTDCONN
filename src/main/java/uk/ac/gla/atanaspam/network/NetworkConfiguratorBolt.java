@@ -9,6 +9,8 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.TupleUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.network.utils.ConfiguratorStateKeeper;
 
 import java.net.InetAddress;
@@ -24,8 +26,10 @@ import java.util.Map;
  */
 public class NetworkConfiguratorBolt extends BaseRichBolt {
 
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkConfiguratorBolt.class);
     private OutputCollector collector;
     int taskId;
+    Long numBolts;
     int[] commandHistory;
     TopologyContext context;
     ConfiguratorStateKeeper state;
@@ -45,10 +49,12 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         this.context = context;
         taskId = context.getThisTaskId();
         commandHistory = new int[10];
+        // numBolts is cast to Long due to a bug in Storm
+        numBolts = (Long) conf.get("boltNum");
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
         lvl2 = new ArrayList<>();
-        state = new ConfiguratorStateKeeper();
+        state = new ConfiguratorStateKeeper(numBolts.intValue());
 
         Map<Integer, String> map = context.getTaskToComponent();
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
@@ -71,7 +77,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     public void execute( Tuple tuple )
     {
         if(TupleUtils.isTick(tuple)){
-            System.out.println(state);
+            LOG.info(state.toString());
             //TODO emit config according to current stats
             return;
         }
@@ -92,26 +98,34 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 state.addUnexpPortHit(port,srcTasktId);
                 break;
             }
-            case 3:{    /* 3 means lots of hits to the same dest IP */
+            case 3:{    /* 3 means lots of hits to the same src IP */
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
                 state.addIpHit(ip,srcTasktId);
                 break;
             }
-            case 4:{    /* 4 means hits to an unexpected IP */
+            case 4:{    /* 4 means lots of hits to the same dest IP */
+                InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
+                state.addIpHit(ip,srcTasktId);
+                break;
+            }
+            case 5:{    /* 5 means hits to an unexpected IP */
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
                 state.addUnexpIpHit(ip,srcTasktId);
                 break;
             }
-            case 5:{    /* 5 means a dropped packet */
+            case 6:{    /* 6 means a dropped packet */
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
                 state.addDropPacket(ip, srcTasktId);
                 //System.out.println("Dropped: " + ip.getHostAddress()); // for testing
                 break;
             }
-            case 6: { /* anomalious flag trafic */
+            case 7: { /* anomalious flag trafic */
                 //InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
                 int port = (Integer) tuple.getValueByField("anomalyData");
                 state.addBadFlag(port, srcTasktId);
+            }
+            case 8: { /* Dropped Packet */
+                //TODO handle dropped packets
             }
         }
         collector.ack(tuple);
