@@ -7,6 +7,8 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.pcapj.*;
 
 import java.net.InetAddress;
@@ -23,6 +25,7 @@ import java.util.Map;
  */
 public class PacketSpout extends BaseRichSpout {
 
+    private static final Logger LOG = LoggerFactory.getLogger(PacketSpout.class);
     private SpoutOutputCollector collector;
     PacketGenerator p;
 
@@ -39,8 +42,34 @@ public class PacketSpout extends BaseRichSpout {
     @Override
     public void nextTuple()
     {
-        Utils.sleep(20);
+        Utils.sleep(10);
         BasicPacket packet = p.getPacket();
+        emitPacket(packet);
+    }
+
+    @Override
+    public void ack(Object id)
+    {
+    }
+
+    @Override
+    public void fail(Object id)
+    {
+    }
+
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer)
+    {
+        declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
+        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
+        declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "flags"));
+    }
+
+    /**
+     * Emits a packet on a stream depending on its type
+     * @param packet the Generic Packet instance to be emitted
+     */
+    private void emitPacket(BasicPacket packet){
         if(packet instanceof TCPPacket){
             TCPPacket packet1 = (TCPPacket) packet;
             /** If the packet is a TCPPacket then emit it to the TCPPacket stream */
@@ -62,27 +91,12 @@ public class PacketSpout extends BaseRichSpout {
             collector.emit("IPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
                     packet1.getDestMacAddress(), packet1.getSrc_ip(), packet1.getDst_ip()));
         }
-        else
+        else {
             /** If it is not recognised, dont emit anything */
+            LOG.warn("Encountered an unknown packet type");
             return;
+        }
     }
 
-    @Override
-    public void ack(Object id)
-    {
-    }
-
-    @Override
-    public void fail(Object id)
-    {
-    }
-
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer)
-    {
-        declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
-        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
-        declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "Flags"));
-    }
 
 }
