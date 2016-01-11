@@ -5,11 +5,11 @@ import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.network.utils.StateKeeper;
 
-import java.lang.reflect.Array;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 
@@ -21,6 +21,8 @@ import java.util.ArrayList;
  */
 public class NetworkTopology {
 
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkTopology.class);
+
     private static final int DEFAULT_RUNTIME_IN_SECONDS = 60;
     private static final int TOP_N = 5;
     private static final int NUM_SPOUTS = 2;
@@ -30,9 +32,15 @@ public class NetworkTopology {
     private static final int NUM_LVL2_BOLTS = 8;
     private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS;
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
+
+        if (args[0] == null){
+            LOG.error("Invalid path to pcap file. Terminating");
+            System.exit(1);
+        }
+        String filePath = args[0];
         TopologyBuilder builder = new TopologyBuilder();
+
 
 
         /***                        Topology Configuration                  ***/
@@ -74,7 +82,7 @@ public class NetworkTopology {
         Config conf = new Config();
         conf.put("timecheck", false);
         conf.put("boltNum", (int) NUM_BOLTS);
-        //TODO add .pcap file path here and get it as an arg in args
+        conf.put("filePath", filePath);
         conf.registerSerialization(StateKeeper.class);
         LocalCluster cluster = new LocalCluster();
 

@@ -33,7 +33,8 @@ public class PacketSpout extends BaseRichSpout {
     public void open( Map conf, TopologyContext context, SpoutOutputCollector collector )
     {
         this.collector = collector;
-        p = new PacketGenerator("partial.pcap", true, false);
+        String filePath = (String) conf.get("filePath");
+        p = new PacketGenerator(filePath, true, false);
         p.configure(new ArrayList<InetAddress>(), new ArrayList<InetAddress>(), new ArrayList<Integer>(),
                 new ArrayList<Integer>(), new ArrayList<>(),0);
         p.setAnomalousTrafficPercentage(5);
