@@ -15,9 +15,9 @@ public class StateKeeper implements Serializable{
     private HashSet<InetAddress> blockedIpAddr;
     private HashSet<InetAddress> monitoredIpAddr;
     private HashSet<boolean[]> blockedFlags;
-    private Map<InetAddress, Long> srcIpHitCount;
-    private Map<InetAddress, Long> destIpHitCount;
-    private Map<Integer, Long> portHitCount;
+    private HashMap<InetAddress, Long> srcIpHitCount;
+    private HashMap<InetAddress, Long> destIpHitCount;
+    private HashMap<Integer, Long> portHitCount;
     private Long[] flagCount;
 
     public StateKeeper(){
@@ -71,6 +71,14 @@ public class StateKeeper implements Serializable{
         return blockedFlags.remove(flag);
     }
 
+    public void clearHitCounts(){
+        srcIpHitCount.clear();
+        destIpHitCount.clear();
+        portHitCount.clear();
+        for(int i=0;i<9;i++)
+            flagCount[i] = new Long(0);
+    }
+
     public void incrementSrcIpHitCount(InetAddress addr){
         if(srcIpHitCount.get(addr) != null){
             srcIpHitCount.put(addr, srcIpHitCount.get(addr)+1);
@@ -79,11 +87,11 @@ public class StateKeeper implements Serializable{
         }
     }
 
-    public Map<InetAddress, Long> getSrcIpHitCount() {
+    public HashMap<InetAddress, Long> getSrcIpHitCount() {
         return srcIpHitCount;
     }
 
-    public void setSrcIpHitCount(Map<InetAddress, Long> srcIpHitCount) {
+    public void setSrcIpHitCount(HashMap<InetAddress, Long> srcIpHitCount) {
         this.srcIpHitCount = srcIpHitCount;
     }
 
@@ -95,11 +103,11 @@ public class StateKeeper implements Serializable{
         }
     }
 
-    public Map<InetAddress, Long> getDestIpHitCount() {
+    public HashMap<InetAddress, Long> getDestIpHitCount() {
         return destIpHitCount;
     }
 
-    public void setDestIpHitCount(Map<InetAddress, Long> destIpHitCount) {
+    public void setDestIpHitCount(HashMap<InetAddress, Long> destIpHitCount) {
         this.destIpHitCount = destIpHitCount;
     }
 
@@ -111,11 +119,11 @@ public class StateKeeper implements Serializable{
         }
     }
 
-    public Map<Integer, Long> getPortHitCount() {
+    public HashMap<Integer, Long> getPortHitCount() {
         return portHitCount;
     }
 
-    public void setPortHitCount(Map<Integer, Long> portHitCount) {
+    public void setPortHitCount(HashMap<Integer, Long> portHitCount) {
         this.portHitCount = portHitCount;
     }
 

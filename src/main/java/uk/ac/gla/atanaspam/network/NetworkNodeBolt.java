@@ -9,6 +9,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.TupleUtils;
+import uk.ac.gla.atanaspam.network.utils.HitCountKeeper;
 import uk.ac.gla.atanaspam.network.utils.NthLastModifiedTimeTracker;
 import uk.ac.gla.atanaspam.network.utils.SlidingWindowCounter;
 import uk.ac.gla.atanaspam.network.utils.StateKeeper;
@@ -49,6 +50,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private final int emitFrequencyInSeconds;
     private NthLastModifiedTimeTracker lastModifiedTracker;
     private StateKeeper state;
+    private HitCountKeeper hitCount;
     GenericPacket packet;
     /**
      * Check verbosity indicates the level of checks to be performed
@@ -77,6 +79,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         timeChecks = false;
         gatherStatistics = false;
         state = new StateKeeper();
+        hitCount = new HitCountKeeper();
 
         this.windowLengthInSeconds = windowLengthInSeconds;
         this.emitFrequencyInSeconds = emitFrequencyInSeconds;
@@ -99,10 +102,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * to the NetworkConfuguratorBolt
      */
     private void emitCurrentWindowCounts() {
-        Map<InetAddress, Long> ipCounts = ipCounter.getCountsThenAdvanceWindow();
-        Map<Integer, Long> portCounts = portCounter.getCountsThenAdvanceWindow();
+        HashMap<InetAddress, Long> ipCounts = ipCounter.getCountsThenAdvanceWindow();
+        HashMap<Integer, Long> portCounts = portCounter.getCountsThenAdvanceWindow();
 
-        Map<InetAddress, Long> tempIpCount = new HashMap<InetAddress, Long>();
+        HashMap<InetAddress, Long> tempIpCount = new HashMap<InetAddress, Long>();
         int actualWindowLengthInSeconds = lastModifiedTracker.secondsSinceOldestModification();
         lastModifiedTracker.markAsModified();
         if (actualWindowLengthInSeconds != windowLengthInSeconds) {
@@ -111,9 +114,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }else {
             for (Map.Entry<InetAddress, Long> a : ipCounts.entrySet()) {
                 try {
-                    if (state.getSrcIpHitCount().get(a.getKey()) < a.getValue()) {
+                    if (a.getValue() > state.getSrcIpHitCount().get(a.getKey())) {
                         tempIpCount.put(a.getKey(), a.getValue());
                         LOG.info(taskId + ": " + a.getKey() + " " + state.getSrcIpHitCount().get(a.getKey()) + "-" + a.getValue());
+
                     }
                 } catch (NullPointerException e) {
                     continue;
@@ -230,26 +234,14 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     /** Obtain the packet from the spout */
                     packet = obtainPacket(tuple);
                     if (packet == null) {
+                        collector.ack(tuple);
                         return;
                     }
-                    packetsProcessed++;
-                    if (packetsProcessed >= 6000 && !timeChecks){
-                        //LOG.info(state);
-                        for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet())
-                        report(3, a.getKey());
-                        for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet())
-                            report(1, a.getKey());
-                        if (state.getFlagCount()[4] > 1000)
-                            report(6,4);
-                        if (state.getFlagCount()[5] > 1000)
-                            report(6,5);
-                        //TODO derive statistics from state
-                        packetsProcessed = 0;
-                    }
+
                 }
 
             } catch (Exception e) {
-                LOG.error("An exception occured during bolt "+ taskId + "execution", e);
+                LOG.error("An exception occurred during bolt "+ taskId + " execution", e);
                 collector.reportError(e);
             }
             /** Invoke performChecks() on each packet that is received
@@ -257,13 +249,63 @@ public class NetworkNodeBolt extends BaseRichBolt {
              * */
 
             if (performChecks(verbosity, packet)) {
-                send(packet);
+                emitPacket(packet);
             } else {
-                report(5, packet.getSrc_ip());
+                report(8, packet.getSrc_ip());
             }
+            /** If gatherStatistics is true gather data about the traffic characteristics*/
             if (gatherStatistics) {
-                ipCounter.incrementCount(packet.getSrc_ip());
-                portCounter.incrementCount(packet.getDst_port());
+                // TODO combine emitCurrentWindowCounts and this
+                packetsProcessed++;
+                /** report as soon as 6000 packets processed */
+                if (packetsProcessed >= 6000 && !timeChecks){
+                    for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet()){
+                        try {
+                            //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
+                            if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) ) {
+                                report(3, a.getKey());
+                                LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
+                            }
+                        }catch (NullPointerException e){
+                            continue;
+                        }
+                    }
+                    for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet()) {
+                        try {
+                            //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
+                            if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) ) {
+                                report(1, a.getKey());
+                                LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " keys");
+                            }
+                        }catch (NullPointerException e){
+                            continue;
+                        }
+                    }
+                    if (state.getFlagCount()[4] > hitCount.getFlagCount()[4]) {
+                        report(7, 4);
+                        LOG.info("Reported flag 4 for" + state.getFlagCount()[4] + " hits");
+                    }
+                    if (state.getFlagCount()[5] > hitCount.getFlagCount()[5]) {
+                        report(7, 5);
+                        LOG.info("Reported flag 5 for " + state.getFlagCount()[4] + " hits");
+                    }
+
+                    //TODO derive statistics from state
+                    packetsProcessed = 0;
+                    //LOG.info("Before: " + hitCount.toString());
+                    hitCount.set(state.getSrcIpHitCount(), state.getDestIpHitCount(), state.getPortHitCount(), state.getFlagCount());
+                    //LOG.info("After: " + hitCount.toString());
+                    state.resetCounts();
+                }
+                /** Increment respective counts */
+                if (timeChecks) {
+                    ipCounter.incrementCount(packet.getSrc_ip());
+                    portCounter.incrementCount(packet.getDst_port());
+                } else{
+                    state.incrementSrcIpHitCount(packet.getSrc_ip());
+                    state.incrementPortHitCount(packet.getDst_port());
+                }
+
             }
             collector.ack(tuple);
         }
@@ -273,7 +315,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         declarer.declareStream("Reporting", new Fields("taskId", "anomalyType", "anomalyData"));
         declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
         declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
-        declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "Flags"));
+        declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "flags"));
     }
 
     /**
@@ -289,15 +331,15 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
         if (packet.getType().equals("TCP")){
             if (code >0)status = status & checkPort(packet.getDst_port());
-            if (code >1)status = status & checkIP(packet.getSrc_ip());
+            if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
             if (code >2)status = status & checkFlags(packet.getFlags());
         }
         else if (packet.getType().equals("UDP")){
             if (code >0)status = status & checkPort(packet.getDst_port());
-            if (code >1)status = status & checkIP(packet.getSrc_ip());
+            if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
         }
         else if (packet.getType().equals("IPP")){
-            if (code >0)status = status & checkIP(packet.getSrc_ip());
+            if (code >0)status = status & checkSrcIP(packet.getSrc_ip());
         }
         else return false;
 
@@ -325,12 +367,25 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * @param addr the IP address to be checked
      * @return true if no problem is detected, false otherwise
      */
-    private boolean checkIP(InetAddress addr){
+    private boolean checkSrcIP(InetAddress addr){
         if (state.isBlockedIpAddr(addr))
             return false;
-        else if(state.isMonitoredIpAddr(addr)){
-            report(4, addr);
-        }
+//        else if(state.isMonitoredIpAddr(addr)){
+//            report(4, addr);
+//        }
+        state.incrementSrcIpHitCount(addr);
+        return true;
+
+    }
+
+    /**
+     * Check an IP address against the rules specified for the bolt
+     * @param addr the IP address to be checked
+     * @return true if no problem is detected, false otherwise
+     */
+    private boolean checkDstIP(InetAddress addr){
+        if (state.isBlockedIpAddr(addr))
+            return false;
         state.incrementSrcIpHitCount(addr);
         return true;
 
@@ -377,7 +432,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
             int srcPort = (Integer) tuple.getValueByField("srcPort");
             int destPort = (Integer) tuple.getValueByField("destPort");
-            boolean[] flags = (boolean[]) tuple.getValueByField("Flags");
+            boolean[] flags = (boolean[]) tuple.getValueByField("flags");
             return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort, flags);
 
             /** if the packet originates from the UDPPackets Stream its a UDPPacket */
@@ -409,7 +464,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * Emits a packet on a stream depending on its type
      * @param packet the Generic Packet instance to be emitted
      */
-    private void send(GenericPacket packet){
+    private void emitPacket(GenericPacket packet){
         if(packet.getType().equals("TCP")){
             collector.emit("TCPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
@@ -423,6 +478,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
         else if(packet.getType().equals("IPP")){
             collector.emit("IPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip()));
+        }
+        else {
+            LOG.warn("Encountered an unknown packet type");
+            return;
         }
     }
 

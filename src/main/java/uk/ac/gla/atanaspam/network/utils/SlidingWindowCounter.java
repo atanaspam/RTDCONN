@@ -20,6 +20,7 @@ package uk.ac.gla.atanaspam.network.utils;
 import uk.ac.gla.atanaspam.network.utils.SlotBasedCounter;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -101,8 +102,8 @@ public final class SlidingWindowCounter<T> implements Serializable {
      *
      * @return The current (total) counts of all tracked objects.
      */
-    public Map<T, Long> getCountsThenAdvanceWindow() {
-        Map<T, Long> counts = objCounter.getCounts();
+    public HashMap<T, Long> getCountsThenAdvanceWindow() {
+        HashMap<T, Long> counts = objCounter.getCounts();
         objCounter.wipeZeros();
         objCounter.wipeSlot(tailSlot);
         advanceHead();
