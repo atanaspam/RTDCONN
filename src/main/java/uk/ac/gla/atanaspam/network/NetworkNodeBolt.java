@@ -122,7 +122,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet()){
             try {
                 //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) ) {
+                if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) * 2 ) {
                     report(3, a.getKey());
                     LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
@@ -133,7 +133,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         for(Map.Entry<InetAddress, Long> a : state.getDestIpHitCount().entrySet()){
             try {
                 //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if (a.getValue() > hitCount.getDestIpHitCount().get(a.getKey()) ) {
+                if (a.getValue() > hitCount.getDestIpHitCount().get(a.getKey()) * 2 ) {
                     report(4, a.getKey());
                     LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
@@ -144,7 +144,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet()) {
             try {
                 //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if (a.getValue() > hitCount.getPortHitCount().get(a.getKey()) ) {
+                if (a.getValue() > hitCount.getPortHitCount().get(a.getKey()) * 2 ) {
                     report(1, a.getKey());
                     LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " keys");
                 }
@@ -152,15 +152,15 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 continue;
             }
         }
-
-        if (state.getFlagCount()[4] > hitCount.getFlagCount()[4]) {
-            report(7, 4);
-            LOG.info("Reported flag 4 for" + state.getFlagCount()[4] + " hits");
-        }
-        if (state.getFlagCount()[5] > hitCount.getFlagCount()[5]) {
-            report(7, 5);
-            LOG.info("Reported flag 5 for " + state.getFlagCount()[4] + " hits");
-        }
+//
+//        if (state.getFlagCount()[4] > hitCount.getFlagCount()[4]) {
+//            report(7, 4);
+//            LOG.info("Reported flag 4 for" + state.getFlagCount()[4] + " hits");
+//        }
+//        if (state.getFlagCount()[5] > hitCount.getFlagCount()[5]) {
+//            report(7, 5);
+//            LOG.info("Reported flag 5 for " + state.getFlagCount()[4] + " hits");
+//        }
 
         if (!timeChecks) {
             //TODO derive statistics from state

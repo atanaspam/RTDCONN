@@ -45,14 +45,17 @@ public class NetworkTopology {
 
         /***                        Topology Configuration                  ***/
 
-        builder.setSpout("spout", new PacketSpout(), NUM_SPOUTS );//TODO fix to 4                               // we have 4 packet emitters
+        builder.setSpout("spout", new PacketSpout(), NUM_SPOUTS );                               // we have 4 packet emitters
 
+        builder.setBolt("emitter_bolt", new PacketSpoutBolt(), NUM_SPOUTS )
+                .allGrouping("Controller", "Configure")
+                .shuffleGrouping("spout", "trigger");
 
         builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(), NUM_LVL0_BOLTS )                      // we have 2 low level Bolts
                 .allGrouping("Controller", "Configure")                                 // each one receives everything from the configurator
-                .fieldsGrouping("spout", "IPPackets", new Fields("destIP"))             // packets from the emitter are grouped by the destIP
-                .fieldsGrouping("spout", "TCPPackets", new Fields("destIP"))
-                .fieldsGrouping("spout", "UDPPackets", new Fields("destIP"));
+                .fieldsGrouping("emitter_bolt", "IPPackets", new Fields("destIP"))             // packets from the emitter are grouped by the destIP
+                .fieldsGrouping("emitter_bolt", "TCPPackets", new Fields("destIP"))
+                .fieldsGrouping("emitter_bolt", "UDPPackets", new Fields("destIP"));
 
         builder.setBolt("node_0_lvl_1", new NetworkNodeBolt(), NUM_LVL1_BOLTS)                       // we have 3 mid level bolts
                 .allGrouping("Controller", "Configure")

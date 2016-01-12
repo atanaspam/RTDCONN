@@ -6,13 +6,6 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import backtype.storm.utils.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import uk.ac.gla.atanaspam.pcapj.*;
-
-import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -25,27 +18,16 @@ import java.util.Map;
  */
 public class PacketSpout extends BaseRichSpout {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PacketSpout.class);
     private SpoutOutputCollector collector;
-    PacketGenerator p;
 
     @Override
-    public void open( Map conf, TopologyContext context, SpoutOutputCollector collector )
-    {
+    public void open( Map conf, TopologyContext context, SpoutOutputCollector collector ) {
         this.collector = collector;
-        String filePath = (String) conf.get("filePath");
-        p = new PacketGenerator(filePath, true, false);
-        p.configure(new ArrayList<InetAddress>(), new ArrayList<InetAddress>(), new ArrayList<Integer>(),
-                new ArrayList<Integer>(), new ArrayList<>(),0);
-        p.setAnomalousTrafficPercentage(5);
     }
 
     @Override
-    public void nextTuple()
-    {
-        Utils.sleep(5);
-        BasicPacket packet = p.getPacket();
-        emitPacket(packet);
+    public void nextTuple() {
+       collector.emit("trigger", new Values());
     }
 
     @Override
@@ -59,44 +41,8 @@ public class PacketSpout extends BaseRichSpout {
     }
 
     @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer)
-    {
-        declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
-        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
-        declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "flags"));
-    }
-
-    /**
-     * Emits a packet on a stream depending on its type
-     * @param packet the Generic Packet instance to be emitted
-     */
-    private void emitPacket(BasicPacket packet){
-        if(packet instanceof TCPPacket){
-            TCPPacket packet1 = (TCPPacket) packet;
-            /** If the packet is a TCPPacket then emit it to the TCPPacket stream */
-            collector.emit("TCPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
-                    packet1.getDestMacAddress(), packet1.getSrc_ip(),
-                    packet1.getDst_ip(), packet1.getSrc_port(), packet1.getDst_port(),
-                    packet1.getFlags()));
-        }
-        else if(packet instanceof UDPPacket){
-            UDPPacket packet1 = (UDPPacket) packet;
-            /** If the packet is a UDPPacket then emit it to the UDPPacket stream */
-            collector.emit("UDPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
-                    packet1.getDestMacAddress(), packet1.getSrc_ip(),
-                    packet1.getDst_ip(), packet1.getSrc_port(), packet1.getDst_port()));
-        }
-        else if(packet instanceof IPPacket){
-            IPPacket packet1 = (IPPacket) packet;
-            /** If the packet is a IPPacket then emit it to the IPPacket stream */
-            collector.emit("IPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
-                    packet1.getDestMacAddress(), packet1.getSrc_ip(), packet1.getDst_ip()));
-        }
-        else {
-            /** If it is not recognised, dont emit anything */
-            LOG.warn("Encountered an unknown packet type");
-            return;
-        }
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declareStream("trigger", new Fields());
     }
 
 
