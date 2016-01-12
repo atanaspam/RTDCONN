@@ -38,8 +38,9 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private OutputCollector collector;
     int taskId;
 
-    private final SlidingWindowCounter<InetAddress> ipCounter;
-    private final SlidingWindowCounter<Integer> portCounter;
+    private final SlidingWindowCounter<InetAddress> srcIpCounter;
+    private final SlidingWindowCounter<InetAddress> destIpCounter;
+    private final SlidingWindowCounter<Integer> destPortCounter;
     private static final int NUM_WINDOW_CHUNKS = 3;
     private static final int DEFAULT_SLIDING_WINDOW_IN_SECONDS = NUM_WINDOW_CHUNKS * 60;
     private static final int DEFAULT_EMIT_FREQUENCY_IN_SECONDS = DEFAULT_SLIDING_WINDOW_IN_SECONDS / NUM_WINDOW_CHUNKS;
@@ -83,18 +84,21 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
         this.windowLengthInSeconds = windowLengthInSeconds;
         this.emitFrequencyInSeconds = emitFrequencyInSeconds;
-        ipCounter = new SlidingWindowCounter<InetAddress>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
+        srcIpCounter = new SlidingWindowCounter<InetAddress>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
                 this.emitFrequencyInSeconds));
-        portCounter = new SlidingWindowCounter<Integer>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
+        destIpCounter = new SlidingWindowCounter<InetAddress>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
+                this.emitFrequencyInSeconds));
+        destPortCounter = new SlidingWindowCounter<Integer>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
                 this.emitFrequencyInSeconds));
     }
 
     public void prepare( Map conf, TopologyContext context, OutputCollector collector ) {
         this.collector = collector;
+        timeChecks = (boolean) conf.get("timeCheck");
         taskId = context.getThisTaskId();
         lastModifiedTracker = new NthLastModifiedTimeTracker(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
                 this.emitFrequencyInSeconds));
-        LOG.debug("Initialized task " + taskId + " from " + taskId + " with verbosity " + verbosity);
+        LOG.info("Initialized task " + taskId + " from " + taskId + " with verbosity " + verbosity);
     }
 
     /**
@@ -102,34 +106,70 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * to the NetworkConfuguratorBolt
      */
     private void emitCurrentWindowCounts() {
-        HashMap<InetAddress, Long> ipCounts = ipCounter.getCountsThenAdvanceWindow();
-        HashMap<Integer, Long> portCounts = portCounter.getCountsThenAdvanceWindow();
+        if(timeChecks){
+            hitCount.set(state.getSrcIpHitCount(), state.getDestIpHitCount(), state.getPortHitCount(), state.getFlagCount());
+            state.setSrcIpHitCount(new HashMap<>(srcIpCounter.getCountsThenAdvanceWindow()));
+            state.setDestIpHitCount(new HashMap<>(destIpCounter.getCountsThenAdvanceWindow()));
+            state.setPortHitCount(new HashMap<>(destPortCounter.getCountsThenAdvanceWindow()));
 
-        HashMap<InetAddress, Long> tempIpCount = new HashMap<InetAddress, Long>();
-        int actualWindowLengthInSeconds = lastModifiedTracker.secondsSinceOldestModification();
-        lastModifiedTracker.markAsModified();
-        if (actualWindowLengthInSeconds != windowLengthInSeconds) {
-            LOG.warn(String.format(WINDOW_LENGTH_WARNING_TEMPLATE, actualWindowLengthInSeconds, windowLengthInSeconds));
-            tempIpCount = ipCounts;
-        }else {
-            for (Map.Entry<InetAddress, Long> a : ipCounts.entrySet()) {
-                try {
-                    if (a.getValue() > state.getSrcIpHitCount().get(a.getKey())) {
-                        tempIpCount.put(a.getKey(), a.getValue());
-                        LOG.info(taskId + ": " + a.getKey() + " " + state.getSrcIpHitCount().get(a.getKey()) + "-" + a.getValue());
-
-                    }
-                } catch (NullPointerException e) {
-                    continue;
-                }
+            int actualWindowLengthInSeconds = lastModifiedTracker.secondsSinceOldestModification();
+            lastModifiedTracker.markAsModified();
+            if (actualWindowLengthInSeconds != windowLengthInSeconds) {
+                LOG.warn(String.format(WINDOW_LENGTH_WARNING_TEMPLATE, actualWindowLengthInSeconds, windowLengthInSeconds));
+                return;
             }
         }
-        state.setSrcIpHitCount(tempIpCount);
-        state.setPortHitCount(portCounts);
-        for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet())
-            report(3, a.getKey());
-        for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet())
-            report(1, a.getKey());
+        for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet()){
+            try {
+                //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
+                if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) ) {
+                    report(3, a.getKey());
+                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
+                }
+            }catch (NullPointerException e){
+                continue;
+            }
+        }
+        for(Map.Entry<InetAddress, Long> a : state.getDestIpHitCount().entrySet()){
+            try {
+                //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
+                if (a.getValue() > hitCount.getDestIpHitCount().get(a.getKey()) ) {
+                    report(4, a.getKey());
+                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
+                }
+            }catch (NullPointerException e){
+                continue;
+            }
+        }
+        for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet()) {
+            try {
+                //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
+                if (a.getValue() > hitCount.getPortHitCount().get(a.getKey()) ) {
+                    report(1, a.getKey());
+                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " keys");
+                }
+            }catch (NullPointerException e){
+                continue;
+            }
+        }
+
+        if (state.getFlagCount()[4] > hitCount.getFlagCount()[4]) {
+            report(7, 4);
+            LOG.info("Reported flag 4 for" + state.getFlagCount()[4] + " hits");
+        }
+        if (state.getFlagCount()[5] > hitCount.getFlagCount()[5]) {
+            report(7, 5);
+            LOG.info("Reported flag 5 for " + state.getFlagCount()[4] + " hits");
+        }
+
+        if (!timeChecks) {
+            //TODO derive statistics from state
+            packetsProcessed = 0;
+            //LOG.info("Before: " + hitCount.toString());
+            hitCount.set(state.getSrcIpHitCount(), state.getDestIpHitCount(), state.getPortHitCount(), state.getFlagCount());
+            //LOG.info("After: " + hitCount.toString());
+            state.resetCounts();
+        }
     }
 
     public void execute( Tuple tuple ) {
@@ -258,51 +298,18 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 // TODO combine emitCurrentWindowCounts and this
                 packetsProcessed++;
                 /** report as soon as 6000 packets processed */
-                if (packetsProcessed >= 6000 && !timeChecks){
-                    for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet()){
-                        try {
-                            //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                            if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) ) {
-                                report(3, a.getKey());
-                                LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
-                            }
-                        }catch (NullPointerException e){
-                            continue;
-                        }
-                    }
-                    for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet()) {
-                        try {
-                            //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                            if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) ) {
-                                report(1, a.getKey());
-                                LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " keys");
-                            }
-                        }catch (NullPointerException e){
-                            continue;
-                        }
-                    }
-                    if (state.getFlagCount()[4] > hitCount.getFlagCount()[4]) {
-                        report(7, 4);
-                        LOG.info("Reported flag 4 for" + state.getFlagCount()[4] + " hits");
-                    }
-                    if (state.getFlagCount()[5] > hitCount.getFlagCount()[5]) {
-                        report(7, 5);
-                        LOG.info("Reported flag 5 for " + state.getFlagCount()[4] + " hits");
-                    }
-
-                    //TODO derive statistics from state
-                    packetsProcessed = 0;
-                    //LOG.info("Before: " + hitCount.toString());
-                    hitCount.set(state.getSrcIpHitCount(), state.getDestIpHitCount(), state.getPortHitCount(), state.getFlagCount());
-                    //LOG.info("After: " + hitCount.toString());
-                    state.resetCounts();
+                if (packetsProcessed >= 10000 && !timeChecks){
+                    LOG.info(taskId + " processed 10000 packets.");
+                    emitCurrentWindowCounts();
                 }
                 /** Increment respective counts */
                 if (timeChecks) {
-                    ipCounter.incrementCount(packet.getSrc_ip());
-                    portCounter.incrementCount(packet.getDst_port());
+                    srcIpCounter.incrementCount(packet.getSrc_ip());
+                    destIpCounter.incrementCount(packet.getDst_ip());
+                    destPortCounter.incrementCount(packet.getDst_port());
                 } else{
                     state.incrementSrcIpHitCount(packet.getSrc_ip());
+                    state.incrementDestIpHitCount(packet.getDst_ip());
                     state.incrementPortHitCount(packet.getDst_port());
                 }
 

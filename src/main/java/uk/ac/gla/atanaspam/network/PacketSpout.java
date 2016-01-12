@@ -43,7 +43,7 @@ public class PacketSpout extends BaseRichSpout {
     @Override
     public void nextTuple()
     {
-        Utils.sleep(10);
+        Utils.sleep(5);
         BasicPacket packet = p.getPacket();
         emitPacket(packet);
     }

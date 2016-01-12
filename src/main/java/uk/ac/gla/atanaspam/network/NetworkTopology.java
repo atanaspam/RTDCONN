@@ -80,7 +80,7 @@ public class NetworkTopology {
 
 
         Config conf = new Config();
-        conf.put("timecheck", false);
+        conf.put("timeCheck", false);
         conf.put("boltNum", (int) NUM_BOLTS);
         conf.put("filePath", filePath);
         conf.registerSerialization(StateKeeper.class);
@@ -106,7 +106,7 @@ public class NetworkTopology {
             e.printStackTrace();
         }*/ //This is commented as we dont want to block anything right now
 
-        conf.put("timeChecks", false);
+        conf.put("timeCheck", false);
         conf.put("node_0_lvl_0", 1);
         conf.put("node_0_lvl_1", 0);
         conf.put("blockedIp", blocked);

@@ -71,13 +71,13 @@ public class StateKeeper implements Serializable{
         return blockedFlags.remove(flag);
     }
 
-    public void clearHitCounts(){
-        srcIpHitCount.clear();
-        destIpHitCount.clear();
-        portHitCount.clear();
-        for(int i=0;i<9;i++)
-            flagCount[i] = new Long(0);
-    }
+//    public void clearHitCounts(){
+//        srcIpHitCount.clear();
+//        destIpHitCount.clear();
+//        portHitCount.clear();
+//        for(int i=0;i<9;i++)
+//            flagCount[i] = new Long(0);
+//    }
 
     public void incrementSrcIpHitCount(InetAddress addr){
         if(srcIpHitCount.get(addr) != null){
@@ -95,7 +95,7 @@ public class StateKeeper implements Serializable{
         this.srcIpHitCount = srcIpHitCount;
     }
 
-    public void incrDesrIpHitCount(InetAddress addr){
+    public void incrementDestIpHitCount(InetAddress addr){
         if(destIpHitCount.get(addr) != null){
             destIpHitCount.put(addr, destIpHitCount.get(addr)+1);
         } else{

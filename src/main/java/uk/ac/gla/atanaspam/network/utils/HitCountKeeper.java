@@ -36,12 +36,45 @@ public class HitCountKeeper implements Serializable{
         flagCount = newFlagCount;
     }
 
+
+    public Long[] getFlagCount() {
+        return flagCount;
+    }
+
+    public void setFlagCount(Long[] flagCount) {
+        this.flagCount = flagCount;
+    }
+
+    public void clearHitCounts(){
+        srcIpHitCount.clear();
+        destIpHitCount.clear();
+        portHitCount.clear();
+        for(int i=0;i<9;i++)
+            flagCount[i] = new Long(0);
+    }
+
+    public void incrementSrcIpHitCount(InetAddress addr){
+        if(srcIpHitCount.get(addr) != null){
+            srcIpHitCount.put(addr, srcIpHitCount.get(addr)+1);
+        } else{
+            srcIpHitCount.put(addr, new Long(1));
+        }
+    }
+
     public HashMap<InetAddress, Long> getSrcIpHitCount() {
         return srcIpHitCount;
     }
 
     public void setSrcIpHitCount(HashMap<InetAddress, Long> srcIpHitCount) {
         this.srcIpHitCount = srcIpHitCount;
+    }
+
+    public void incrDesrIpHitCount(InetAddress addr){
+        if(destIpHitCount.get(addr) != null){
+            destIpHitCount.put(addr, destIpHitCount.get(addr)+1);
+        } else{
+            destIpHitCount.put(addr, new Long(1));
+        }
     }
 
     public HashMap<InetAddress, Long> getDestIpHitCount() {
@@ -52,6 +85,14 @@ public class HitCountKeeper implements Serializable{
         this.destIpHitCount = destIpHitCount;
     }
 
+    public void incrementPortHitCount(int port) {
+        if (portHitCount.get(port) != null) {
+            portHitCount.put(port, (portHitCount.get(port) + 1));
+        } else {
+            portHitCount.put(port, new Long(1));
+        }
+    }
+
     public HashMap<Integer, Long> getPortHitCount() {
         return portHitCount;
     }
@@ -60,12 +101,8 @@ public class HitCountKeeper implements Serializable{
         this.portHitCount = portHitCount;
     }
 
-    public Long[] getFlagCount() {
-        return flagCount;
-    }
-
-    public void setFlagCount(Long[] flagCount) {
-        this.flagCount = flagCount;
+    public void incrementFlagCount(int flag){
+        flagCount[flag] = flagCount[flag] +1;
     }
 
     public String toString(){
