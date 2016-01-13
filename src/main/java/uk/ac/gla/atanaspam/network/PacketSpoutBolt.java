@@ -43,6 +43,20 @@ public class PacketSpoutBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         if ("Configure".equals(tuple.getSourceStreamId())) {
+            int dest = (Integer) tuple.getValueByField("taskId");
+            /** obtain the address and check if you are the intended recipient of the message */
+            if (dest != taskId) {
+                collector.ack(tuple);
+                return;
+            }
+            int code = (Integer) tuple.getValueByField("code");
+            switch (code) {
+                case 30:{
+                    int anomaly = (Integer) tuple.getValueByField("setting");
+                    LOG.info("Changing anomaly to "+ anomaly);
+//                    p.configure(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),anomaly);
+                }
+            }
             //TODO configure packetGenerator
             collector.ack(tuple);
         }else {

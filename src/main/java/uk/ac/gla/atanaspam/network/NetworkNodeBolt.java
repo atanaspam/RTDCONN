@@ -197,7 +197,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     }
                     /** get the code for the operation to be performed */
                     int code = (Integer) tuple.getValueByField("code");
-                    /** I have currently only implemented code 1 which means add this port to the list of blocked ports */
                     switch (code) {
                         case 10: { // means push new check verbosity
                             int newVerb = (Integer) tuple.getValueByField("setting");

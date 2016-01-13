@@ -30,7 +30,8 @@ public class NetworkTopology {
     private static final int NUM_LVL0_BOLTS = 2;
     private static final int NUM_LVL1_BOLTS = 4;
     private static final int NUM_LVL2_BOLTS = 8;
-    private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS;
+    private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS + NUM_SPOUTS;
+    //NUM_SPOUTS = Number of PacketSpoutBolts
 
     public static void main(String[] args) {
 

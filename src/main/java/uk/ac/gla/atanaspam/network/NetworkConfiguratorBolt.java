@@ -34,7 +34,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     TopologyContext context;
     ConfiguratorStateKeeper state;
     int n = 4;
-
+    ArrayList<Integer> spouts;
     ArrayList<Integer> lvl0;
     ArrayList<Integer> lvl1;
     ArrayList<Integer> lvl2;
@@ -52,6 +52,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         commandHistory = new int[10];
         // numBolts is cast to Long due to a bug in Storm
         numBolts = (Long) conf.get("boltNum");
+        spouts = new ArrayList<>();
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
         lvl2 = new ArrayList<>();
@@ -61,17 +62,18 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
             if (entry.getValue().equals("node_0_lvl_0")) {
                 lvl0.add(entry.getKey());
-            }
-            if (entry.getValue().equals("node_0_lvl_1")) {
+            }else if (entry.getValue().equals("node_0_lvl_1")) {
                 lvl1.add(entry.getKey());
-            }
-            if (entry.getValue().equals("node_0_lvl_2")) {
+            }else if (entry.getValue().equals("node_0_lvl_2")) {
                 lvl2.add(entry.getKey());
+            } else if (entry.getValue().equals("emitter_bolt")) {
+                spouts.add(entry.getKey());
             }
         }
         all = new ArrayList<>();
         all.addAll(lvl0);
         all.addAll(lvl1);
+        all.addAll(lvl2);
         initialConfig();
     }
 
@@ -83,7 +85,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 LOG.info("Round "+ n);
                 n--;
             }else{
-
+                emitBulkConfig(spouts,30, 1);
             }
             //TODO emit config according to current stats
             return;
