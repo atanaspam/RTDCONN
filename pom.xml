@@ -90,6 +90,7 @@
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
             <version>0.10.0</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.github.atanaspam</groupId>
