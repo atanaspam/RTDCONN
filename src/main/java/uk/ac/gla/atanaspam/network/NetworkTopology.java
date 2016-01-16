@@ -2,6 +2,10 @@ package uk.ac.gla.atanaspam.network;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
+import backtype.storm.StormSubmitter;
+import backtype.storm.generated.AlreadyAliveException;
+import backtype.storm.generated.AuthorizationException;
+import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
@@ -35,14 +39,16 @@ public class NetworkTopology {
 
     public static void main(String[] args) {
 
-        if (args[0] == null){
-            LOG.error("Invalid path to pcap file. Terminating");
+        if (args.length != 3){
+            System.out.println("Invalid arguments provided. Please specify:");
+            System.out.println("1. Path to pcap file. 2. Operation mode: 'local' or 'remote'. 3. Topology name.");
             System.exit(1);
         }
         String filePath = args[0];
+        String mode = args[1];
+        String topologyName = args[2];
+
         TopologyBuilder builder = new TopologyBuilder();
-
-
 
         /***                        Topology Configuration                  ***/
 
@@ -85,16 +91,32 @@ public class NetworkTopology {
 
         Config conf = new Config();
         conf.put("timeCheck", false);
-        conf.put("boltNum", (int) NUM_BOLTS);
+        conf.put("boltNum", NUM_BOLTS);
         conf.put("filePath", filePath);
-        conf.registerSerialization(StateKeeper.class);
-        LocalCluster cluster = new LocalCluster();
+        //conf.registerSerialization(StateKeeper.class);
 
-        /** submit the topology and run it for 10 seconds */
-        cluster.submitTopology("test", conf, builder.createTopology());
-        Utils.sleep(5000*200);
-        cluster.killTopology("test");
-        cluster.shutdown();
+        if (mode.equals("remote")) {
+            conf.setNumWorkers(20);
+            conf.setMaxSpoutPending(5000);
+            try {
+                StormSubmitter.submitTopology(topologyName, conf, builder.createTopology());
+            } catch (AlreadyAliveException e) {
+                e.printStackTrace();
+            } catch (InvalidTopologyException e) {
+                e.printStackTrace();
+            } catch (AuthorizationException e) {
+                e.printStackTrace();
+            }
+        } else if (mode.equals("local")){
+            LocalCluster cluster = new LocalCluster();
+            cluster.submitTopology(topologyName, conf, builder.createTopology());
+            Utils.sleep(5000*200);
+            cluster.killTopology(topologyName);
+            cluster.shutdown();
+        } else {
+            LOG.error("Invalid mode specified. Terminating.");
+            System.exit(1);
+        }
     }
     @Deprecated
     private static Config initializeConfig(Config conf){
