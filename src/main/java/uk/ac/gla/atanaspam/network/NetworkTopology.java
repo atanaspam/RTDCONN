@@ -72,9 +72,9 @@ public class NetworkTopology {
 
         builder.setBolt("node_0_lvl_2", new NetworkNodeBolt(), NUM_LVL2_BOLTS)                       // we have 8 high level bolts
                 .allGrouping("Controller", "Configure")
-                .fieldsGrouping("node_0_lvl_0", "IPPackets", new Fields("destIP"))      // packets from the emitter are grouped by the destIP
-                .fieldsGrouping("node_0_lvl_0", "TCPPackets", new Fields("destIP"))
-                .fieldsGrouping("node_0_lvl_0", "UDPPackets", new Fields("destIP"));    // they receive approved packets from the mid level bolts
+                .fieldsGrouping("node_0_lvl_1", "IPPackets", new Fields("destIP"))      // packets from the emitter are grouped by the destIP
+                .fieldsGrouping("node_0_lvl_1", "TCPPackets", new Fields("destIP"))
+                .fieldsGrouping("node_0_lvl_1", "UDPPackets", new Fields("destIP"));    // they receive approved packets from the mid level bolts
 
         builder.setBolt("Controller", new NetworkConfiguratorBolt(), NUM_CONTROLLERS)                 // we have 1 controller bolt
                 .allGrouping("node_0_lvl_0", "Reporting")                               // it receives all the reporting streams from

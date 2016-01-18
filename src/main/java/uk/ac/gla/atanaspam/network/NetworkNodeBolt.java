@@ -415,6 +415,21 @@ public class NetworkNodeBolt extends BaseRichBolt {
     }
 
     /**
+     * Check the actual contents of a packet for any anomalies
+     * The check is based on searching for signatures within the data field
+     * @return true if no problem is detected, false otherwise
+     */
+    private boolean checkApplicationLayer(){
+        if (packet.data == null)
+            return true;
+        else{
+            //TODO implement
+            //if (packet.data.equals())
+            return true;
+        }
+    }
+
+    /**
      * Report some type of error or event to the Configurator bolt.
      * @param type the code representing the event type
      * @param descr the value for the event if applicable
