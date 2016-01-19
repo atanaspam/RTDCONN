@@ -60,7 +60,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
             //TODO configure packetGenerator
             collector.ack(tuple);
         }else {
-            backtype.storm.utils.Utils.sleep(5);
+            //backtype.storm.utils.Utils.sleep(5);
             BasicPacket packet = p.getPacket();
             emitPacket(packet);
         }
@@ -84,7 +84,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
             collector.emit("TCPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
                     packet1.getDestMacAddress(), packet1.getSrc_ip(),
                     packet1.getDst_ip(), packet1.getSrc_port(), packet1.getDst_port(),
-                    packet1.getFlags().toArray()));
+                    (packet1.getFlags().toArray())));
         }
         else if(packet instanceof UDPPacket){
             UDPPacket packet1 = (UDPPacket) packet;

@@ -69,7 +69,7 @@ public class StateKeeper implements Serializable{
         blockedFlags.add(flag);
     }
 
-    public boolean removeBlockedFlag(boolean[] flag){
+    public boolean removeBlockedFlag(TCPFlags flag){
         return blockedFlags.remove(flag);
     }
 

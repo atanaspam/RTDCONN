@@ -12,6 +12,7 @@ import backtype.storm.utils.TupleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.network.utils.ConfiguratorStateKeeper;
+import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -192,7 +193,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             //blockedIP .add(InetAddress.getByName("192.168.1.2"));
             //monitoredIP.add(InetAddress.getByName("192.168.1.2"));
         }catch (Exception e){}
-        boolean[][] badflags = {};
+        TCPFlags[] badflags = {};
 
         //emitBulkConfig(lvl0, 20, false); (this is default)   // top level does not gather statistics
         emitBulkConfig(lvl0, 10, 0);        // top level perfroms no checks
@@ -205,8 +206,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             emitBulkConfig(all, 13, ip);
         for(InetAddress ip : monitoredIP)
             emitBulkConfig(all, 15, ip);
-        for(boolean[] flags :badflags)
-            emitBulkConfig(all, 15, flags);
+        for(TCPFlags flags : badflags)
+            emitBulkConfig(all, 17, flags);
         emitBulkConfig(all, 19, false);
     }
 

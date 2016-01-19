@@ -256,13 +256,13 @@ public class NetworkNodeBolt extends BaseRichBolt {
                             break;
                         }
                         case 17: { // add new flag to blocked
-                            TCPFlags newFlags = (TCPFlags) tuple.getValueByField("setting");
+                            TCPFlags newFlags = new TCPFlags((boolean[]) tuple.getValueByField("setting"));
                             state.addBlockedFlag(newFlags);
                             LOG.debug(taskId + " Added new flags to blocked"); // for debugging
                             break;
                         }
                         case 18: { // means remove flag from flags
-                            boolean[] newFlags = (boolean[]) tuple.getValueByField("setting");
+                            TCPFlags newFlags = new TCPFlags((boolean[]) tuple.getValueByField("setting"));
                             state.removeBlockedFlag(newFlags);
                             LOG.debug(taskId + " Removed flags from blocked"); // for debugging
                             break;
@@ -503,7 +503,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         if(packet.getType().equals("TCP")){
             collector.emit("TCPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
-                    packet.getDst_port(), packet.getFlags()));
+                    packet.getDst_port(), packet.getFlags().toArray()));
         }
         else if(packet.getType().equals("UDP")){
             collector.emit("UDPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
