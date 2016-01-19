@@ -35,7 +35,7 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
 
     public void execute( Tuple tuple )
     {
-        packetCount++;
+        //packetCount++;
         collector.ack(tuple);
     }
 

@@ -1,5 +1,7 @@
 package uk.ac.gla.atanaspam.network.utils;
 
+import uk.ac.gla.atanaspam.pcapj.TCPFlags;
+
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.*;
@@ -14,7 +16,7 @@ public class StateKeeper implements Serializable{
     private boolean[] blockedPorts;
     private HashSet<InetAddress> blockedIpAddr;
     private HashSet<InetAddress> monitoredIpAddr;
-    private HashSet<boolean[]> blockedFlags;
+    private HashSet<TCPFlags> blockedFlags;
     private HashMap<InetAddress, Long> srcIpHitCount;
     private HashMap<InetAddress, Long> destIpHitCount;
     private HashMap<Integer, Long> portHitCount;
@@ -61,9 +63,9 @@ public class StateKeeper implements Serializable{
         return monitoredIpAddr.remove(addr);
     }
 
-    public boolean isBadFlag(boolean[] flag){return blockedFlags.contains(flag); }
+    public boolean isBadFlag(TCPFlags flag){return blockedFlags.contains(flag); }
 
-    public void addBlockedFlag(boolean[] flag){
+    public void addBlockedFlag(TCPFlags flag){
         blockedFlags.add(flag);
     }
 

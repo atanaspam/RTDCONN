@@ -9,17 +9,21 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.TupleUtils;
+import org.apache.storm.shade.org.apache.zookeeper.data.Stat;
 import uk.ac.gla.atanaspam.network.utils.HitCountKeeper;
 import uk.ac.gla.atanaspam.network.utils.NthLastModifiedTimeTracker;
 import uk.ac.gla.atanaspam.network.utils.SlidingWindowCounter;
 import uk.ac.gla.atanaspam.network.utils.StateKeeper;
 
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
 
 /**
@@ -63,6 +67,15 @@ public class NetworkNodeBolt extends BaseRichBolt {
     int packetsProcessed;
 
     /**
+     * Initializes a NetworkNodeBolt with a specific state
+     * Used for testing.
+     */
+    public NetworkNodeBolt(StateKeeper state){
+        this(DEFAULT_SLIDING_WINDOW_IN_SECONDS, DEFAULT_EMIT_FREQUENCY_IN_SECONDS);
+        this.state = state;
+    }
+
+    /**
      * Initializes a NetworkNodeBolt with default slidingWindow settings
      */
     public NetworkNodeBolt(){
@@ -98,7 +111,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         taskId = context.getThisTaskId();
         lastModifiedTracker = new NthLastModifiedTimeTracker(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
                 this.emitFrequencyInSeconds));
-        LOG.info("Initialized task " + taskId + " from " + taskId + " with verbosity " + verbosity);
+        LOG.debug("Initialized task " + taskId + " from " + taskId + " with verbosity " + verbosity);
     }
 
     /**
@@ -243,7 +256,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                             break;
                         }
                         case 17: { // add new flag to blocked
-                            boolean[] newFlags = (boolean[]) tuple.getValueByField("setting");
+                            TCPFlags newFlags = (TCPFlags) tuple.getValueByField("setting");
                             state.addBlockedFlag(newFlags);
                             LOG.debug(taskId + " Added new flags to blocked"); // for debugging
                             break;
@@ -286,7 +299,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
             /** Invoke performChecks() on each packet that is received
              * if performChecks returns true the packet is allowed to pass, else it is just dropped
              * */
-
             if (performChecks(verbosity, packet)) {
                 emitPacket(packet);
             } else {
@@ -402,12 +414,14 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * @param flags the flags to be checked
      * @return true if no problem is detected, false otherwise
      */
-    private boolean checkFlags(boolean[] flags){
-        if (state.isBadFlag(flags))
+    private boolean checkFlags(TCPFlags flags){
+        if (state.isBadFlag(flags)) {
             return false;
+        }
         else {
-            for(int i=0; i<flags.length; i++){
-                if (flags[i])
+            boolean[] a = flags.toArray();
+            for(int i=0; i<a.length; i++){
+                if (a[i])
                     state.incrementFlagCount(i);
             }
             return true;
@@ -454,7 +468,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             int srcPort = (Integer) tuple.getValueByField("srcPort");
             int destPort = (Integer) tuple.getValueByField("destPort");
             boolean[] flags = (boolean[]) tuple.getValueByField("flags");
-            return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort, flags);
+            return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort, new TCPFlags(flags));
 
             /** if the packet originates from the UDPPackets Stream its a UDPPacket */
         } else if ("UDPPackets".equals(tuple.getSourceStreamId())) {

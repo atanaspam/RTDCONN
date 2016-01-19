@@ -1,6 +1,7 @@
 package uk.ac.gla.atanaspam.network;
 
 import uk.ac.gla.atanaspam.pcapj.IPPacket;
+import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -18,7 +19,7 @@ public class GenericPacket extends IPPacket implements Serializable{
     protected int src_port;
     protected int dst_port;
 
-    protected boolean[] flags;
+    protected TCPFlags flags;
 
     protected byte[] data;
 
@@ -30,7 +31,7 @@ public class GenericPacket extends IPPacket implements Serializable{
         return dst_port;
     }
 
-    public boolean[] getFlags() {
+    public TCPFlags getFlags() {
         return flags;
     }
 
@@ -69,7 +70,7 @@ public class GenericPacket extends IPPacket implements Serializable{
      * @param dst_port
      * @param flags
      */
-    public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP, int src_port, int dst_port, boolean[] flags) {
+    public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP, int src_port, int dst_port, TCPFlags flags) {
 
         super(timestamp, srcMAC, destMAC, srcIP, dstIP);
         this.src_port = src_port;
@@ -122,7 +123,7 @@ public class GenericPacket extends IPPacket implements Serializable{
                             "DEST PORT: %d%nFLAGS: %s%n",
                     this.timestamp/1000, this.sourceMacAddress, this.destMacAddress, this.src_ip.getHostAddress(),
                     this.dst_ip.getHostAddress(), this.src_port, this.dst_port/*, this.seqNum, this.ackNum, this.data.length*/,
-                    Arrays.toString(this.flags));
+                    this.flags);
         }
         else return "Unknown packet";
     }
