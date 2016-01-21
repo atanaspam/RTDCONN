@@ -65,6 +65,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private boolean gatherStatistics;
     private boolean timeChecks;
     private int packetsProcessed;
+    private int detectionRatio;
 
     /**
      * Initializes a NetworkNodeBolt with a specific state
@@ -95,6 +96,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         verbosity = 3;
         timeChecks = false;
         gatherStatistics = false;
+        detectionRatio = 2000;
         state = new StateKeeper();
         hitCount = new HitCountKeeper();
 
@@ -137,8 +139,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }
         for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet()){
             try {
-                //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) * 2 ) {
+                //LOG.info("SRC IP "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
+                if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) * 2 && a.getValue() > detectionRatio ) {
                     report(3, a.getKey());
                     LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
@@ -148,8 +150,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }
         for(Map.Entry<InetAddress, Long> a : state.getDestIpHitCount().entrySet()){
             try {
-                //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if (a.getValue() > hitCount.getDestIpHitCount().get(a.getKey()) * 2 ) {
+                //LOG.info("DEST IP "+ a.getKey() +" "+ a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
+                if (a.getValue() > hitCount.getDestIpHitCount().get(a.getKey()) * 2 && a.getValue() > detectionRatio) {
                     report(4, a.getKey());
                     LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
@@ -159,8 +161,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }
         for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet()) {
             try {
-                //LOG.info(a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if (a.getValue() > hitCount.getPortHitCount().get(a.getKey()) * 2 ) {
+                //LOG.info("PORT "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
+                if (a.getValue() > hitCount.getPortHitCount().get(a.getKey()) * 2 && a.getValue() > detectionRatio) {
                     report(1, a.getKey());
                     LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " keys");
                 }
@@ -278,6 +280,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                             LOG.debug(taskId + " Set gatherStatistics to " + gatherStatistics); // for debugging
                             break;
                         }
+                        //TODO add detectionRatio change command
 
                     }
                     /** we return here because otherwise the performChecks() method would be invoked on the config data => crash */
@@ -323,12 +326,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     state.incrementSrcIpHitCount(packet.getSrc_ip());
                     state.incrementDestIpHitCount(packet.getDst_ip());
                     state.incrementPortHitCount(packet.getDst_port());
-                    boolean[] a = packet.getFlags().toArray();
-                    for(int i=0; i<a.length; i++){
-                        if (a[i]) {
-                            state.incrementFlagCount(i);
-                        }
-                    }
                 }
 
             }
@@ -429,6 +426,14 @@ public class NetworkNodeBolt extends BaseRichBolt {
             return false;
         }
         else {
+            if (gatherStatistics){
+                boolean[] a = flags.toArray();
+                for(int i=0; i<a.length; i++){
+                    if (a[i]) {
+                        state.incrementFlagCount(i);
+                    }
+                }
+            }
             return true;
         }
     }

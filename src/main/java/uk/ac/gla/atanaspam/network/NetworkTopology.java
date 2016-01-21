@@ -110,7 +110,7 @@ public class NetworkTopology {
         } else if (mode.equals("local")){
             LocalCluster cluster = new LocalCluster();
             cluster.submitTopology(topologyName, conf, builder.createTopology());
-            Utils.sleep(5000*200);
+            Utils.sleep(5000*1000);
             cluster.killTopology(topologyName);
             cluster.shutdown();
         } else {

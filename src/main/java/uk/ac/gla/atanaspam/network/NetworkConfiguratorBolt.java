@@ -34,7 +34,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     int[] commandHistory;
     TopologyContext context;
     ConfiguratorStateKeeper state;
-    int n = 4;
+    int round = 0;
     ArrayList<Integer> spouts;
     ArrayList<Integer> lvl0;
     ArrayList<Integer> lvl1;
@@ -82,11 +82,11 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     {
         if(TupleUtils.isTick(tuple)){
             LOG.info(state.toString());
-            if (n > 0){
-                LOG.info("Round "+ n);
-                n--;
+            if (round != 10){
+                LOG.info("Round: "+ round);
+                round++;
             }else{
-                emitBulkConfig(spouts,30, 1);
+                //emitBulkConfig(spouts,30, 1);
             }
             //TODO emit config according to current stats
             return;
