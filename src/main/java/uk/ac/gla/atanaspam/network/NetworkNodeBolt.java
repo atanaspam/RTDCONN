@@ -361,6 +361,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             //if (code >0)status = status & checkPort(packet.getSrc_port());
             if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
             if (code >2)status = status & checkFlags(packet.getFlags());
+            if (code >3)status = status & checkApplicationLayer();
         }
         else if (packet.getType().equals("UDP")){
             if (code >0)status = status & checkPort(packet.getDst_port());

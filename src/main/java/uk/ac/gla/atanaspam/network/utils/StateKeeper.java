@@ -13,6 +13,8 @@ import java.util.*;
  */
 public class StateKeeper implements Serializable{
 
+    //TODO ad version UID
+
     private boolean[] blockedPorts;
     private HashSet<InetAddress> blockedIpAddr;
     private HashSet<InetAddress> monitoredIpAddr;

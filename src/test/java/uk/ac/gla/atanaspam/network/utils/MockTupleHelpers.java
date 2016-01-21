@@ -37,6 +37,16 @@ public final class MockTupleHelpers {
         when(tuple.getValueByField("srcPort")).thenReturn(p.getSrc_port());
         when(tuple.getValueByField("destPort")).thenReturn(p.getDst_port());
         when(tuple.getValueByField("flags")).thenReturn(p.getFlags().toArray());
+        //when(tuple.getValueByField("data")).thenReturn(p.getFlags().toArray());
+        //TODO enable Application Layer
+        return tuple;
+    }
+
+    public static Tuple mockReportingTuple(int taskId, int code, Object data) {
+        Tuple tuple = mockTuple(ANY_NON_SYSTEM_COMPONENT_ID, "Reporting");
+        when(tuple.getValueByField("taskId")).thenReturn(taskId);
+        when(tuple.getValueByField("anomalyType")).thenReturn(code);
+        when(tuple.getValueByField("anomalyData")).thenReturn(data);
         return tuple;
     }
 

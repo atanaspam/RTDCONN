@@ -13,6 +13,7 @@ import java.util.Map;
  */
 public class HitCountKeeper implements Serializable{
 
+    //TODO ad version UID
 
     private HashMap<InetAddress, Long> srcIpHitCount;
     private HashMap<InetAddress, Long> destIpHitCount;

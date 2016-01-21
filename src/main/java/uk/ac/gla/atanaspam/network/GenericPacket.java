@@ -15,6 +15,8 @@ import java.util.Arrays;
  */
 public class GenericPacket extends IPPacket implements Serializable{
 
+    //TODO ad version UID
+
     String type;
     protected int src_port;
     protected int dst_port;

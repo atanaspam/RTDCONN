@@ -156,6 +156,21 @@ public class NetworkNodeBoltTest {
         verify(collector).emit(eq("Reporting"), any(Values.class));
     }
 
+//    @Test
+//    public void shouldDropIfApplicationLayerCheckFails() {
+//        // given a TCP packet with specific application layerdata signature
+//        Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
+//        OutputCollector collector = mock(OutputCollector.class);
+//        StateKeeper s = new StateKeeper();
+//        s.addApplicationLayerSignature(signature);
+//        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,3,0);
+//        bolt.prepare(mockConf(), mockContext(), collector);
+//        // when the packet is processed
+//        bolt.execute(tcpTuple);
+//        // then packet is dropped
+//        verify(collector).emit(eq("Reporting"), any(Values.class));
+//    }
+
     @Test
     public void shouldIncrementPortHitCount() {
         // given a TCP packet with port 1000
@@ -210,4 +225,6 @@ public class NetworkNodeBoltTest {
             }
         }
     }
+
+
 }

@@ -125,17 +125,18 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             }
             case 6:{    /* 6 means a dropped packet */
                 InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                state.addDropPacket(ip, srcTasktId);
+                state.addDroppedPacket(ip, srcTasktId);
                 //System.out.println("Dropped: " + ip.getHostAddress()); // for testing
                 break;
             }
             case 7: { /* anomalious flag trafic */
                 //InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
                 int port = (Integer) tuple.getValueByField("anomalyData");
-                state.addBadFlag(port, srcTasktId);
+                state.addBadFlagHit(port, srcTasktId);
+                //TODO implement flags
             }
-            case 8: { /* Dropped Packet */
-                //TODO handle dropped packets
+            case 8: { /* Other */
+                //TODO implement more
             }
         }
         collector.ack(tuple);
