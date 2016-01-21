@@ -214,7 +214,7 @@ public class NetworkNodeBoltTest {
         Tuple tcpTuple = mockTCPPacketTuple(p);
         OutputCollector collector = mock(OutputCollector.class);
         StateKeeper s = new StateKeeper();
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,true,0,0);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(s,true,4,0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(tcpTuple);
