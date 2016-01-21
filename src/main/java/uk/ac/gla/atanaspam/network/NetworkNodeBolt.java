@@ -223,14 +223,12 @@ public class NetworkNodeBolt extends BaseRichBolt {
                         case 11: { // means push new port to blacklist
                             int newPort = (Integer) tuple.getValueByField("setting");
                             state.setBlockedPort(newPort, true);
-                            //TODO clear current Port HitCount if necesary
                             LOG.debug(taskId + " Added port " + newPort + " to blacklist"); // for debugging
                             break;
                         }
                         case 12: { // means remove a port from blacklist
                             int newPort = (Integer) tuple.getValueByField("setting");
                             state.setBlockedPort(newPort, false);
-                            //TODO clear current Port HitCount if necesary
                             LOG.debug(taskId + " Removed port " + newPort + " from blacklist"); // for debugging
                             break;
                         }
@@ -361,7 +359,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             //if (code >0)status = status & checkPort(packet.getSrc_port());
             if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
             if (code >2)status = status & checkFlags(packet.getFlags());
-            if (code >3)status = status & checkApplicationLayer();
+            if (code >3)status = status & checkApplicationLayer(packet.getData());
         }
         else if (packet.getType().equals("UDP")){
             if (code >0)status = status & checkPort(packet.getDst_port());
@@ -440,13 +438,15 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * The check is based on searching for signatures within the data field
      * @return true if no problem is detected, false otherwise
      */
-    private boolean checkApplicationLayer(){
+    private boolean checkApplicationLayer(byte[] data){
         if (packet.data == null)
             return true;
         else{
-            //TODO implement
-            //if (packet.data.equals())
-            return true;
+            if (state.dataIsBlocked(data)){
+                return false;
+            } else {
+                return true;
+            }
         }
     }
 

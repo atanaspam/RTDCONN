@@ -131,9 +131,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             }
             case 7: { /* anomalious flag trafic */
                 //InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                int port = (Integer) tuple.getValueByField("anomalyData");
-                state.addBadFlagHit(port, srcTasktId);
-                //TODO implement flags
+                int flagNum = (Integer) tuple.getValueByField("anomalyData");
+                state.addBadFlagHit(flagNum, srcTasktId);
             }
             case 8: { /* Other */
                 //TODO implement more

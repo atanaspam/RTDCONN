@@ -38,7 +38,7 @@ import java.util.*;
  */
 public class ConfiguratorStateKeeper implements Serializable{
 
-    //TODO add version UID
+    private static final long serialVersionUID = 0;
     //TODO see if you can numOfBolts correlates to taskId's
 
     private ArrayList<HashMap<Object, int[]>> data;
