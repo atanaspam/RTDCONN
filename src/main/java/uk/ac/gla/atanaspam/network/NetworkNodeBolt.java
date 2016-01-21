@@ -61,18 +61,21 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * Check verbosity indicates the level of checks to be performed
      * 0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags
      */
-    int verbosity;
-    boolean gatherStatistics;
-    boolean timeChecks;
-    int packetsProcessed;
+    private int verbosity;
+    private boolean gatherStatistics;
+    private boolean timeChecks;
+    private int packetsProcessed;
 
     /**
      * Initializes a NetworkNodeBolt with a specific state
      * Used for testing.
      */
-    public NetworkNodeBolt(StateKeeper state){
+    public NetworkNodeBolt(StateKeeper state, boolean gatherStatistics, int verbosity, int packetsProcessed){
         this(DEFAULT_SLIDING_WINDOW_IN_SECONDS, DEFAULT_EMIT_FREQUENCY_IN_SECONDS);
         this.state = state;
+        this.gatherStatistics = gatherStatistics;
+        this.verbosity = verbosity;
+        this.packetsProcessed = packetsProcessed;
     }
 
     /**
@@ -322,6 +325,12 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     state.incrementSrcIpHitCount(packet.getSrc_ip());
                     state.incrementDestIpHitCount(packet.getDst_ip());
                     state.incrementPortHitCount(packet.getDst_port());
+                    boolean[] a = packet.getFlags().toArray();
+                    for(int i=0; i<a.length; i++){
+                        if (a[i]) {
+                            state.incrementFlagCount(i);
+                        }
+                    }
                 }
 
             }
@@ -349,11 +358,13 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
         if (packet.getType().equals("TCP")){
             if (code >0)status = status & checkPort(packet.getDst_port());
+            //if (code >0)status = status & checkPort(packet.getSrc_port());
             if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
             if (code >2)status = status & checkFlags(packet.getFlags());
         }
         else if (packet.getType().equals("UDP")){
             if (code >0)status = status & checkPort(packet.getDst_port());
+            //if (code >0)status = status & checkPort(packet.getDst_port());
             if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
         }
         else if (packet.getType().equals("IPP")){
@@ -370,7 +381,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * @return true if no problem is detected, false otherwise
      */
     private boolean checkPort(int port){
-        boolean blocked = state.getBlockedPort(port);
+        boolean blocked = state.isBlockedPort(port);
         /** if the entry in ports for this port is true, then this port is blocked => drop */
         if (!blocked && !timeChecks){
             state.incrementPortHitCount(port);
@@ -419,11 +430,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
             return false;
         }
         else {
-            boolean[] a = flags.toArray();
-            for(int i=0; i<a.length; i++){
-                if (a[i])
-                    state.incrementFlagCount(i);
-            }
             return true;
         }
     }

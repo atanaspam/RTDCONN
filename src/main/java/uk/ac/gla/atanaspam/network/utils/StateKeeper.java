@@ -39,7 +39,7 @@ public class StateKeeper implements Serializable{
                                     blockedPorts[port] = value;
     }
 
-    public boolean getBlockedPort(int port){
+    public boolean isBlockedPort(int port){
                 return blockedPorts[port];
     }
 
@@ -72,14 +72,6 @@ public class StateKeeper implements Serializable{
     public boolean removeBlockedFlag(TCPFlags flag){
         return blockedFlags.remove(flag);
     }
-
-//    public void clearHitCounts(){
-//        srcIpHitCount.clear();
-//        destIpHitCount.clear();
-//        portHitCount.clear();
-//        for(int i=0;i<9;i++)
-//            flagCount[i] = new Long(0);
-//    }
 
     public void incrementSrcIpHitCount(InetAddress addr){
         if(srcIpHitCount.get(addr) != null){
@@ -130,7 +122,7 @@ public class StateKeeper implements Serializable{
     }
 
     public void incrementFlagCount(int flag){
-        flagCount[flag] = flagCount[flag] +1;
+        flagCount[flag]++;
     }
 
     public void clearFlagCount(int flag){
