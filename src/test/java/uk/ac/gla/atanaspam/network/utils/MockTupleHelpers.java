@@ -54,6 +54,7 @@ public final class MockTupleHelpers {
         when(tuple.getValueByField("destIP")).thenReturn(p.getDst_ip());
         when(tuple.getValueByField("srcPort")).thenReturn(p.getSrc_port());
         when(tuple.getValueByField("destPort")).thenReturn(p.getDst_port());
+        when(tuple.getValueByField("data")).thenReturn(p.getData().getData());
         return tuple;
     }
 

@@ -356,6 +356,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             if (code >0)status = status & checkPort(packet.getDst_port());
             //if (code >0)status = status & checkPort(packet.getDst_port());
             if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
+            if (code >3)status = status & checkApplicationLayer(packet.getData());
         }
         else if (packet.getType().equals("IPP")){
             if (code >0)status = status & checkSrcIP(packet.getSrc_ip());
@@ -486,7 +487,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
             InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
             int srcPort = (Integer) tuple.getValueByField("srcPort");
             int destPort = (Integer) tuple.getValueByField("destPort");
-            return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort);
+            byte[] data = (byte[]) tuple.getValueByField("data");
+            return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort, data);
 
             /** if the packet originates from the IPPackets Stream its a IPPacket */
             /** an IP packet is a packet that is not UDP or TCP and therefore we only extract basic data */
@@ -505,7 +507,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
     public void declareOutputFields( OutputFieldsDeclarer declarer ) {
         declarer.declareStream("Reporting", new Fields("taskId", "anomalyType", "anomalyData"));
         declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
-        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
+        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "data"));
         declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "flags", "data"));
     }
 
@@ -522,7 +524,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         else if(packet.getType().equals("UDP")){
             collector.emit("UDPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
-                    packet.getDst_port()));
+                    packet.getDst_port(), packet.getData().getData()));
         }
         else if(packet.getType().equals("IPP")){
             collector.emit("IPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),

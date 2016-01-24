@@ -203,7 +203,7 @@ public class NetworkNodeBoltTest {
     }
 
     @Test
-    public void shouldDropIfApplicationLayerCheckFails() {
+    public void shouldDropIfTCPApplicationLayerCheckFails() {
         // given a TCP packet with specific application layer data signature
         TCPPacket p = null;
         try {
@@ -222,6 +222,29 @@ public class NetworkNodeBoltTest {
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(tcpTuple);
+        // then packet is dropped
+        verify(collector).emit(eq("Reporting"), any(Values.class));
+    }
+
+    @Test
+    public void shouldDropIfUDPApplicationLayerCheckFails() {
+        // given a TCP packet with specific application layer data signature
+        UDPPacket p = null;
+        try {
+            p = new UDPPacket(new Long(123456789), "FF:FF:FF:FF:FF:FF", "FF:FF:FF:FF:FF:FF",
+                    InetAddress.getByName("192.168.1.1"), InetAddress.getByName("192.168.1.1"), 1000, 1000,
+                    new PacketContents("This is not permitted".getBytes()));
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        Tuple udpTuple = mockUDPPacketTuple(p);
+        OutputCollector collector = mock(OutputCollector.class);
+        StateKeeper s = new StateKeeper();
+        s.addBlockedData("This is not permitted".getBytes());
+        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,4,0);
+        bolt.prepare(mockConf(), mockContext(), collector);
+        // when the packet is processed
+        bolt.execute(udpTuple);
         // then packet is dropped
         verify(collector).emit(eq("Reporting"), any(Values.class));
     }

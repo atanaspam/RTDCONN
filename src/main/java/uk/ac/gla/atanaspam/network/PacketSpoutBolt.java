@@ -69,7 +69,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
-        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
+        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "data"));
         declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "flags", "data"));
     }
 
@@ -91,7 +91,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
             /** If the packet is a UDPPacket then emit it to the UDPPacket stream */
             collector.emit("UDPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
                     packet1.getDestMacAddress(), packet1.getSrc_ip(),
-                    packet1.getDst_ip(), packet1.getSrc_port(), packet1.getDst_port()));
+                    packet1.getDst_ip(), packet1.getSrc_port(), packet1.getDst_port(), packet1.getData().getData()));
         }
         else if(packet instanceof IPPacket){
             IPPacket packet1 = (IPPacket) packet;
