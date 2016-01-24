@@ -111,7 +111,7 @@ public class NetworkNodeBoltTest {
      * Show that given a packet with a specific anomaly the system reacts accordingly - Drop
      */
     @Test
-    public void shouldDropIfBlockedPort() {
+    public void shouldDropIfBlockedTCPPort() {
         // given a TCP packet with port 1000 and a rule that blocks port 1000
         Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
         OutputCollector collector = mock(OutputCollector.class);
@@ -125,7 +125,21 @@ public class NetworkNodeBoltTest {
         verify(collector).emit(eq("Reporting"), any(Values.class));
     }
     @Test
-    public void shouldDropIfBlockedIp() {
+    public void shouldDropIfBlockedUDPPort() {
+        // given a UDP packet with port 1000 and a rule that blocks port 1000
+        Tuple udpTuple = mockUDPPacketTuple(udpPacket);
+        OutputCollector collector = mock(OutputCollector.class);
+        StateKeeper s = new StateKeeper();
+        s.setBlockedPort(1000, true);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,3,0);
+        bolt.prepare(mockConf(), mockContext(), collector);
+        // when the packet is processed
+        bolt.execute(udpTuple);
+        // then packet is dropped
+        verify(collector).emit(eq("Reporting"), any(Values.class));
+    }
+    @Test
+    public void shouldDropIfBlockedTCPIp() {
         // given a TCP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
         Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
         OutputCollector collector = mock(OutputCollector.class);
@@ -138,6 +152,40 @@ public class NetworkNodeBoltTest {
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(tcpTuple);
+        // then the packet is dropped
+        verify(collector).emit(eq("Reporting"), any(Values.class));
+    }
+    @Test
+    public void shouldDropIfBlockedUDPIp() {
+        // given a UDP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
+        Tuple udpTuple = mockUDPPacketTuple(udpPacket);
+        OutputCollector collector = mock(OutputCollector.class);
+        StateKeeper s = new StateKeeper();
+        try {
+            s.addBlockedIpAddr(InetAddress.getByName("192.168.1.1"));
+        } catch (UnknownHostException e) {
+        }
+        NetworkNodeBolt bolt = new NetworkNodeBolt(s, false, 3, 0);
+        bolt.prepare(mockConf(), mockContext(), collector);
+        // when the packet is processed
+        bolt.execute(udpTuple);
+        // then the packet is dropped
+        verify(collector).emit(eq("Reporting"), any(Values.class));
+    }
+    @Test
+    public void shouldDropIfBlockedIPIp() {
+        // given an IP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
+        Tuple ipTuple = mockIPPacketTuple(ipPacket);
+        OutputCollector collector = mock(OutputCollector.class);
+        StateKeeper s = new StateKeeper();
+        try {
+            s.addBlockedIpAddr(InetAddress.getByName("192.168.1.1"));
+        } catch (UnknownHostException e) {
+        }
+        NetworkNodeBolt bolt = new NetworkNodeBolt(s, false, 3, 0);
+        bolt.prepare(mockConf(), mockContext(), collector);
+        // when the packet is processed
+        bolt.execute(ipTuple);
         // then the packet is dropped
         verify(collector).emit(eq("Reporting"), any(Values.class));
     }

@@ -2,12 +2,15 @@ package uk.ac.gla.atanaspam.network.utils;
 
 /**
  * This file is copied from @link https://github.com/nathanmarz/storm-starter/blob/master/test/jvm/storm/starter/tools/MockTupleHelpers.java
+ * TODO quote properly
  * @version 0.1
  * @created 20/01/2016
  */
 import backtype.storm.Constants;
 import backtype.storm.tuple.Tuple;
+import uk.ac.gla.atanaspam.pcapj.IPPacket;
 import uk.ac.gla.atanaspam.pcapj.TCPPacket;
+import uk.ac.gla.atanaspam.pcapj.UDPPacket;
 
 import static org.mockito.Mockito.*;
 
@@ -39,6 +42,28 @@ public final class MockTupleHelpers {
         when(tuple.getValueByField("flags")).thenReturn(p.getFlags().toArray());
         //when(tuple.getValueByField("data")).thenReturn(p.getFlags().toArray());
         //TODO enable Application Layer
+        return tuple;
+    }
+
+    public static Tuple mockUDPPacketTuple(UDPPacket p) {
+        Tuple tuple = mockTuple(ANY_NON_SYSTEM_COMPONENT_ID, "UDPPackets");
+        when(tuple.getValueByField("timestamp")).thenReturn(p.getTimestamp());
+        when(tuple.getValueByField("srcMAC")).thenReturn(p.getSourceMacAddress());
+        when(tuple.getValueByField("destMAC")).thenReturn(p.getDestMacAddress());
+        when(tuple.getValueByField("srcIP")).thenReturn(p.getSrc_ip());
+        when(tuple.getValueByField("destIP")).thenReturn(p.getDst_ip());
+        when(tuple.getValueByField("srcPort")).thenReturn(p.getSrc_port());
+        when(tuple.getValueByField("destPort")).thenReturn(p.getDst_port());
+        return tuple;
+    }
+
+    public static Tuple mockIPPacketTuple(IPPacket p) {
+        Tuple tuple = mockTuple(ANY_NON_SYSTEM_COMPONENT_ID, "IPPackets");
+        when(tuple.getValueByField("timestamp")).thenReturn(p.getTimestamp());
+        when(tuple.getValueByField("srcMAC")).thenReturn(p.getSourceMacAddress());
+        when(tuple.getValueByField("destMAC")).thenReturn(p.getDestMacAddress());
+        when(tuple.getValueByField("srcIP")).thenReturn(p.getSrc_ip());
+        when(tuple.getValueByField("destIP")).thenReturn(p.getDst_ip());
         return tuple;
     }
 
