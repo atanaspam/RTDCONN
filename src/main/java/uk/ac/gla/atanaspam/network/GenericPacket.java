@@ -1,6 +1,7 @@
 package uk.ac.gla.atanaspam.network;
 
 import uk.ac.gla.atanaspam.pcapj.IPPacket;
+import uk.ac.gla.atanaspam.pcapj.PacketContents;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
 import java.io.Serializable;
@@ -23,7 +24,7 @@ public class GenericPacket extends IPPacket implements Serializable{
 
     protected TCPFlags flags;
 
-    protected byte[] data;
+    protected PacketContents data;
 
     public int getSrc_port() {
         return src_port;
@@ -37,7 +38,7 @@ public class GenericPacket extends IPPacket implements Serializable{
         return flags;
     }
 
-    public byte[] getData() {
+    public PacketContents getData() {
         return data;
     }
 
@@ -72,12 +73,26 @@ public class GenericPacket extends IPPacket implements Serializable{
      * @param dst_port
      * @param flags
      */
-    public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP, int src_port, int dst_port, TCPFlags flags) {
+    public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP,
+                         int src_port, int dst_port, TCPFlags flags, byte[] data) {
 
         super(timestamp, srcMAC, destMAC, srcIP, dstIP);
         this.src_port = src_port;
         this.dst_port = dst_port;
         this.flags = flags;
+        this.data = new PacketContents(data);
+        this.type = "TCP";
+
+    }
+
+    public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP,
+                         int src_port, int dst_port, TCPFlags flags, PacketContents data) {
+
+        super(timestamp, srcMAC, destMAC, srcIP, dstIP);
+        this.src_port = src_port;
+        this.dst_port = dst_port;
+        this.flags = flags;
+        this.data = data;
         this.type = "TCP";
 
     }
@@ -92,11 +107,31 @@ public class GenericPacket extends IPPacket implements Serializable{
      * @param src_port
      * @param dst_port
      */
-    public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP, int src_port, int dst_port) {
+    public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP,
+                         int src_port, int dst_port) {
 
         super(timestamp, srcMAC, destMAC, srcIP, dstIP);
         this.src_port = src_port;
         this.dst_port = dst_port;
+        this.type = "UDP";
+    }
+
+    public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP,
+                         int src_port, int dst_port, PacketContents data) {
+
+        super(timestamp, srcMAC, destMAC, srcIP, dstIP);
+        this.src_port = src_port;
+        this.dst_port = dst_port;
+        this.data = data;
+        this.type = "UDP";
+    }
+
+    public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP,
+                         int src_port, int dst_port, byte[] data) {
+        super(timestamp, srcMAC, destMAC, srcIP, dstIP);
+        this.src_port = src_port;
+        this.dst_port = dst_port;
+        this.data = new PacketContents(data);
         this.type = "UDP";
 
     }

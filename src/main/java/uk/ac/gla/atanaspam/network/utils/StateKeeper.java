@@ -1,5 +1,6 @@
 package uk.ac.gla.atanaspam.network.utils;
 
+import uk.ac.gla.atanaspam.pcapj.PacketContents;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
 import java.io.Serializable;
@@ -23,7 +24,7 @@ public class StateKeeper implements Serializable{
     private HashMap<InetAddress, Long> destIpHitCount;
     private HashMap<Integer, Long> portHitCount;
     private Long[] flagCount;
-    private HashSet<byte[]> blockedData;
+    private HashSet<PacketContents> blockedData;
 
     public StateKeeper(){
         blockedPorts = new boolean[65535];
@@ -34,6 +35,7 @@ public class StateKeeper implements Serializable{
         destIpHitCount = new HashMap<>();
         portHitCount = new HashMap<>();
         flagCount = new Long[9];
+        blockedData = new HashSet<>();
         for(int i=0;i<9;i++)
             flagCount[i] = new Long(0);
     }
@@ -140,21 +142,21 @@ public class StateKeeper implements Serializable{
         this.flagCount = flagCount;
     }
 
-    public HashSet<byte[]> getBlockedData() {
+    public HashSet<PacketContents> getBlockedData() {
         return blockedData;
     }
 
-    public void setBlockedData(HashSet<byte[]> blockedData) {
+    public void setBlockedData(HashSet<PacketContents> blockedData) {
         this.blockedData = blockedData;
     }
 
-    public boolean dataIsBlocked(byte[] data){
+    public boolean dataIsBlocked(PacketContents data){
         return blockedData.contains(data);
     }
 
-    public void addBlockedData(byte[] data){
-        blockedData.add(data);
-    }
+    public void addBlockedData(byte[] data){ blockedData.add(new PacketContents(data));}
+
+    public void addBlockedData(PacketContents data){ blockedData.add(data);}
 
     public boolean flush(){
         for(int i=0; i<65535; i++){

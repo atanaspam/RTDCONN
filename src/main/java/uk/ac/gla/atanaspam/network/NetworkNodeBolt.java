@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.ac.gla.atanaspam.pcapj.PacketContents;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
 
@@ -333,13 +334,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }
     }
 
-    public void declareOutputFields( OutputFieldsDeclarer declarer ) {
-        declarer.declareStream("Reporting", new Fields("taskId", "anomalyType", "anomalyData"));
-        declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
-        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
-        declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "flags"));
-    }
-
     /**
      * Performs checks upon a packet instance depending on the verbosity specified
      * @param code an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
@@ -443,7 +437,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * The check is based on searching for signatures within the data field
      * @return true if no problem is detected, false otherwise
      */
-    private boolean checkApplicationLayer(byte[] data){
+    private boolean checkApplicationLayer(PacketContents data){
         if (packet.data == null)
             return true;
         else{
@@ -480,7 +474,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
             int srcPort = (Integer) tuple.getValueByField("srcPort");
             int destPort = (Integer) tuple.getValueByField("destPort");
             boolean[] flags = (boolean[]) tuple.getValueByField("flags");
-            return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort, new TCPFlags(flags));
+            byte[] data = (byte[]) tuple.getValueByField("data");
+            return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort, new TCPFlags(flags), data);
 
             /** if the packet originates from the UDPPackets Stream its a UDPPacket */
         } else if ("UDPPackets".equals(tuple.getSourceStreamId())) {
@@ -507,6 +502,13 @@ public class NetworkNodeBolt extends BaseRichBolt {
         return null;
     }
 
+    public void declareOutputFields( OutputFieldsDeclarer declarer ) {
+        declarer.declareStream("Reporting", new Fields("taskId", "anomalyType", "anomalyData"));
+        declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
+        declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort"));
+        declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "flags", "data"));
+    }
+
     /**
      * Emits a packet on a stream depending on its type
      * @param packet the Generic Packet instance to be emitted
@@ -515,7 +517,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         if(packet.getType().equals("TCP")){
             collector.emit("TCPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
-                    packet.getDst_port(), packet.getFlags().toArray()));
+                    packet.getDst_port(), packet.getFlags().toArray(), packet.getData().getData()));
         }
         else if(packet.getType().equals("UDP")){
             collector.emit("UDPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),

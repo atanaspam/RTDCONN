@@ -40,7 +40,7 @@ public final class MockTupleHelpers {
         when(tuple.getValueByField("srcPort")).thenReturn(p.getSrc_port());
         when(tuple.getValueByField("destPort")).thenReturn(p.getDst_port());
         when(tuple.getValueByField("flags")).thenReturn(p.getFlags().toArray());
-        //when(tuple.getValueByField("data")).thenReturn(p.getFlags().toArray());
+        when(tuple.getValueByField("data")).thenReturn(p.getData().getData());
         //TODO enable Application Layer
         return tuple;
     }
