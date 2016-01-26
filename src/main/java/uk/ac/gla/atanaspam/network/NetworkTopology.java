@@ -96,7 +96,8 @@ public class NetworkTopology {
 
         Config conf = new Config();
         conf.put("timeCheck", false);
-        conf.put("boltNum", NUM_BOLTS+"");
+        conf.put("boltNum", NUM_BOLTS);
+        LOG.info(NUM_BOLTS+"");
         conf.put("filePath", filePath);
         //conf.registerSerialization(StateKeeper.class);
 

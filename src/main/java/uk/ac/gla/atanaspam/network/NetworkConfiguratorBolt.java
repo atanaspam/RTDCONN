@@ -30,7 +30,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     private static final Logger LOG = LoggerFactory.getLogger(NetworkConfiguratorBolt.class);
     private OutputCollector collector;
     int taskId;
-    int numBolts;
+    Long numBolts;
     int[] commandHistory;
     TopologyContext context;
     ConfiguratorStateKeeper state;
@@ -52,12 +52,12 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         taskId = context.getThisTaskId();
         commandHistory = new int[10];
         // numBolts is cast to Long due to a bug in Storm
-        numBolts = Integer.parseInt((String) conf.get("boltNum"));
+        numBolts = (Long) conf.get("boltNum");
         spouts = new ArrayList<>();
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
         lvl2 = new ArrayList<>();
-        state = new ConfiguratorStateKeeper(numBolts);
+        state = new ConfiguratorStateKeeper(numBolts.intValue());
 
         Map<Integer, String> map = context.getTaskToComponent();
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
