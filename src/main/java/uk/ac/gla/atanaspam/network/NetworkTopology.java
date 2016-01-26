@@ -52,11 +52,13 @@ public class NetworkTopology {
 
         /***                        Topology Configuration                  ***/
 
-        builder.setSpout("spout", new PacketSpout(), NUM_SPOUTS );                               // we have 4 packet emitters
+        builder.setSpout("spout", new PacketSpout(), NUM_SPOUTS ) // we have 4 packet emitters
+                .setNumTasks(8);
 
         builder.setBolt("emitter_bolt", new PacketSpoutBolt(), NUM_SPOUTS )
                 .allGrouping("Controller", "Configure")
-                .shuffleGrouping("spout", "trigger");
+                .shuffleGrouping("spout", "trigger")
+                .setNumTasks(8);
 
         builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(), NUM_LVL0_BOLTS )                      // we have 2 low level Bolts
                 .allGrouping("Controller", "Configure")                                 // each one receives everything from the configurator
