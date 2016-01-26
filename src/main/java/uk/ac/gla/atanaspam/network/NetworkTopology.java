@@ -34,7 +34,10 @@ public class NetworkTopology {
     private static final int NUM_LVL0_BOLTS = 2;
     private static final int NUM_LVL1_BOLTS = 4;
     private static final int NUM_LVL2_BOLTS = 8;
-    private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS + NUM_SPOUTS;
+
+    private static final int NUM_SPOUT_TASKS = 8;
+
+    private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS + (NUM_SPOUTS*2)*NUM_SPOUT_TASKS;
     //NUM_SPOUTS = Number of PacketSpoutBolts
 
     public static void main(String[] args) {
@@ -93,7 +96,7 @@ public class NetworkTopology {
 
         Config conf = new Config();
         conf.put("timeCheck", false);
-        conf.put("boltNum", NUM_BOLTS+NUM_SPOUTS);
+        conf.put("boltNum", NUM_BOLTS+"");
         conf.put("filePath", filePath);
         //conf.registerSerialization(StateKeeper.class);
 
