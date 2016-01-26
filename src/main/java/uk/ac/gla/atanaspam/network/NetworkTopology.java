@@ -91,12 +91,12 @@ public class NetworkTopology {
 
         Config conf = new Config();
         conf.put("timeCheck", false);
-        conf.put("boltNum", NUM_BOLTS);
+        conf.put("boltNum", NUM_BOLTS+NUM_SPOUTS);
         conf.put("filePath", filePath);
         //conf.registerSerialization(StateKeeper.class);
 
         if (mode.equals("remote")) {
-            conf.setNumWorkers(20);
+            conf.setNumWorkers(NUM_BOLTS + NUM_SPOUTS);
             conf.setMaxSpoutPending(5000);
             try {
                 StormSubmitter.submitTopology(topologyName, conf, builder.createTopology());

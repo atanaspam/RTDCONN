@@ -39,7 +39,6 @@ import java.util.*;
 public class ConfiguratorStateKeeper implements Serializable{
 
     private static final long serialVersionUID = 0;
-    //TODO see if you can numOfBolts correlates to taskId's
 
     private ArrayList<HashMap<Object, int[]>> data;
     private int numOfBolts;
@@ -57,7 +56,7 @@ public class ConfiguratorStateKeeper implements Serializable{
         if (a == null){
             a = new int[numOfBolts];
         }
-        a[taskId]++; // TODO if taskId's dont correspond to numOfBolts this should be changed
+        a[taskId]++;
         data.get(1).put(port,a);
     }
 
