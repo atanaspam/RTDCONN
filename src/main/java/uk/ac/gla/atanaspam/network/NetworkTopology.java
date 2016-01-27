@@ -34,10 +34,11 @@ public class NetworkTopology {
     private static final int NUM_LVL0_BOLTS = 2;
     private static final int NUM_LVL1_BOLTS = 4;
     private static final int NUM_LVL2_BOLTS = 8;
-
+    private static final int NUM_AGGREGATORS = 2;
     private static final int NUM_SPOUT_TASKS = 8;
 
-    private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS + (NUM_SPOUTS*2);
+    private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS +
+            NUM_AGGREGATORS + (NUM_SPOUTS*2);
     //NUM_SPOUTS = Number of PacketSpoutBolts
 
     public static void main(String[] args) {
@@ -86,10 +87,10 @@ public class NetworkTopology {
                 .allGrouping("node_0_lvl_1", "Reporting")
                 .allGrouping("node_0_lvl_2", "Reporting");                              // the high and low level bolts
 
-//        builder.setBolt("Aggregator", new NetworkAggregatorBolt(),1)
-//                .allGrouping("node_0_lvl_2", "IPPackets")
-//                .allGrouping("node_0_lvl_2", "TCPPackets")
-//                .allGrouping("node_0_lvl_2", "UDPPackets");
+        builder.setBolt("Aggregator", new NetworkAggregatorBolt(), NUM_AGGREGATORS)
+                .shuffleGrouping("node_0_lvl_2", "IPPackets")
+                .shuffleGrouping("node_0_lvl_2", "TCPPackets")
+                .shuffleGrouping("node_0_lvl_2", "UDPPackets");
 
         /***                End of Topology Configuration                   ***/
 
@@ -103,7 +104,8 @@ public class NetworkTopology {
 
         if (mode.equals("remote")) {
             conf.setNumWorkers(NUM_BOLTS + 1);
-            //conf.setMaxSpoutPending(5000);
+            conf.setNumAckers(NUM_BOLTS+ 1);
+            conf.setMaxSpoutPending(5000);
             try {
                 StormSubmitter.submitTopology(topologyName, conf, builder.createTopology());
             } catch (AlreadyAliveException e) {
