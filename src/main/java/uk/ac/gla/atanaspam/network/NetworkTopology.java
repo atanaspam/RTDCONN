@@ -29,7 +29,7 @@ public class NetworkTopology {
 
     private static final int DEFAULT_RUNTIME_IN_SECONDS = 60;
     private static final int TOP_N = 5;
-    private static final int NUM_SPOUTS = 2;
+    private static final int NUM_SPOUTS = 4;
     private static final int NUM_CONTROLLERS = 1;
     private static final int NUM_LVL0_BOLTS = 2;
     private static final int NUM_LVL1_BOLTS = 4;
@@ -37,7 +37,7 @@ public class NetworkTopology {
 
     private static final int NUM_SPOUT_TASKS = 8;
 
-    private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS + (NUM_SPOUTS*2)*NUM_SPOUT_TASKS;
+    private static final int NUM_BOLTS = NUM_LVL0_BOLTS + NUM_LVL1_BOLTS + NUM_LVL2_BOLTS + (NUM_SPOUTS*2);
     //NUM_SPOUTS = Number of PacketSpoutBolts
 
     public static void main(String[] args) {
@@ -56,12 +56,12 @@ public class NetworkTopology {
         /***                        Topology Configuration                  ***/
 
         builder.setSpout("spout", new PacketSpout(), NUM_SPOUTS ) // we have 4 packet emitters
-                .setNumTasks(8);
+                ;//.setNumTasks(8);
 
         builder.setBolt("emitter_bolt", new PacketSpoutBolt(), NUM_SPOUTS )
                 .allGrouping("Controller", "Configure")
                 .shuffleGrouping("spout", "trigger")
-                .setNumTasks(8);
+                ;//.setNumTasks(8);
 
         builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(), NUM_LVL0_BOLTS )                      // we have 2 low level Bolts
                 .allGrouping("Controller", "Configure")                                 // each one receives everything from the configurator
@@ -97,13 +97,13 @@ public class NetworkTopology {
         Config conf = new Config();
         conf.put("timeCheck", false);
         conf.put("boltNum", NUM_BOLTS);
-        LOG.info(NUM_BOLTS+"");
+        LOG.info("NUM OF BOLTS :"+NUM_BOLTS);
         conf.put("filePath", filePath);
         //conf.registerSerialization(StateKeeper.class);
 
         if (mode.equals("remote")) {
-            conf.setNumWorkers(NUM_BOLTS + NUM_SPOUTS);
-            conf.setMaxSpoutPending(5000);
+            conf.setNumWorkers(NUM_BOLTS + 1);
+            //conf.setMaxSpoutPending(5000);
             try {
                 StormSubmitter.submitTopology(topologyName, conf, builder.createTopology());
             } catch (AlreadyAliveException e) {

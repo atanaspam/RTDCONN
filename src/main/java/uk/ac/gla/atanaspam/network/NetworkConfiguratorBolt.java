@@ -57,7 +57,6 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
         lvl2 = new ArrayList<>();
-        state = new ConfiguratorStateKeeper(numBolts.intValue());
 
         Map<Integer, String> map = context.getTaskToComponent();
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
@@ -71,6 +70,14 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 spouts.add(entry.getKey());
             }
         }
+        if (numBolts.intValue() > map.size()){
+            state = new ConfiguratorStateKeeper(numBolts.intValue());
+            LOG.info("USING NUM_BOLTS FOR STATEKEEPER - " + numBolts.intValue());
+        } else{
+            state = new ConfiguratorStateKeeper(map.size());
+            LOG.info("USING MAP SIZE FOR STATEKEEPER - " + map.size());
+        }
+
         all = new ArrayList<>();
         all.addAll(lvl0);
         all.addAll(lvl1);

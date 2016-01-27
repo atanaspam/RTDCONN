@@ -30,6 +30,7 @@ public class PacketSpout extends BaseRichSpout {
     @Override
     public void nextTuple() {
        collector.emit("trigger", new Values());
+
     }
 
     @Override
