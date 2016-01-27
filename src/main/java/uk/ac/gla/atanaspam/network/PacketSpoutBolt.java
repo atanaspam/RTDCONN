@@ -63,6 +63,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
             //backtype.storm.utils.Utils.sleep(5);
             BasicPacket packet = p.getPacket();
             emitPacket(packet);
+            collector.ack(tuple);
         }
     }
 
