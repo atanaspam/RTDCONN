@@ -9,6 +9,7 @@ import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * This spout requests packets from the packet generator and passes them to the bolts in the topology
@@ -21,6 +22,7 @@ import java.util.Map;
 public class PacketSpout extends BaseRichSpout {
 
     private SpoutOutputCollector collector;
+    UUID msgId;
 
     @Override
     public void open( Map conf, TopologyContext context, SpoutOutputCollector collector ) {
@@ -29,7 +31,8 @@ public class PacketSpout extends BaseRichSpout {
 
     @Override
     public void nextTuple() {
-       collector.emit("trigger", new Values());
+        msgId = UUID.randomUUID();
+       collector.emit("trigger", new Values(), msgId);
 
     }
 
