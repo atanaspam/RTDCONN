@@ -27,6 +27,9 @@ public class PacketSpoutBolt extends BaseRichBolt {
     int taskId;
     TopologyContext context;
     PacketGenerator p;
+    TCPPacket tcpPacket;
+    UDPPacket udpPacket;
+    IPPacket ipPacket;
 
     @Override
     public void prepare(Map conf, TopologyContext context, OutputCollector collector) {
@@ -61,8 +64,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
             collector.ack(tuple);
         }else {
             //backtype.storm.utils.Utils.sleep(5);
-            BasicPacket packet = p.getPacket();
-            emitPacket(packet);
+            emitPacket(p.getPacket());
             collector.ack(tuple);
         }
     }
@@ -80,25 +82,25 @@ public class PacketSpoutBolt extends BaseRichBolt {
      */
     private void emitPacket(BasicPacket packet){
         if(packet instanceof TCPPacket){
-            TCPPacket packet1 = (TCPPacket) packet;
+            tcpPacket = (TCPPacket) packet;
             /** If the packet is a TCPPacket then emit it to the TCPPacket stream */
-            collector.emit("TCPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
-                    packet1.getDestMacAddress(), packet1.getSrc_ip(),
-                    packet1.getDst_ip(), packet1.getSrc_port(), packet1.getDst_port(),
-                    packet1.getFlags().toArray(), packet1.getData().getData()));
+            collector.emit("TCPPackets", new Values(tcpPacket.getTimestamp(), tcpPacket.getSourceMacAddress(),
+                    tcpPacket.getDestMacAddress(), tcpPacket.getSrc_ip(),
+                    tcpPacket.getDst_ip(), tcpPacket.getSrc_port(), tcpPacket.getDst_port(),
+                    tcpPacket.getFlags().toArray(), tcpPacket.getData().getData()));
         }
         else if(packet instanceof UDPPacket){
-            UDPPacket packet1 = (UDPPacket) packet;
+           udpPacket = (UDPPacket) packet;
             /** If the packet is a UDPPacket then emit it to the UDPPacket stream */
-            collector.emit("UDPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
-                    packet1.getDestMacAddress(), packet1.getSrc_ip(),
-                    packet1.getDst_ip(), packet1.getSrc_port(), packet1.getDst_port(), packet1.getData().getData()));
+            collector.emit("UDPPackets", new Values(udpPacket.getTimestamp(), udpPacket.getSourceMacAddress(),
+                    udpPacket.getDestMacAddress(), udpPacket.getSrc_ip(),
+                    udpPacket.getDst_ip(), udpPacket.getSrc_port(), udpPacket.getDst_port(), udpPacket.getData().getData()));
         }
         else if(packet instanceof IPPacket){
-            IPPacket packet1 = (IPPacket) packet;
+            ipPacket = (IPPacket) packet;
             /** If the packet is a IPPacket then emit it to the IPPacket stream */
-            collector.emit("IPPackets", new Values(packet1.getTimestamp(), packet1.getSourceMacAddress(),
-                    packet1.getDestMacAddress(), packet1.getSrc_ip(), packet1.getDst_ip()));
+            collector.emit("IPPackets", new Values(ipPacket.getTimestamp(), ipPacket.getSourceMacAddress(),
+                    ipPacket.getDestMacAddress(), ipPacket.getSrc_ip(), ipPacket.getDst_ip()));
         }
         else {
             /** If it is not recognised, dont emit anything */
