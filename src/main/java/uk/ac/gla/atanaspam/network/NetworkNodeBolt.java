@@ -304,7 +304,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             /** Invoke performChecks() on each packet that is received
              * if performChecks returns true the packet is allowed to pass, else it is just dropped
              * */
-            if (performChecks(verbosity, packet)) {
+            if (performChecks(verbosity)) {
                 emitPacket(packet);
             } else {
                 report(8, packet.getSrc_ip());
@@ -312,35 +312,35 @@ public class NetworkNodeBolt extends BaseRichBolt {
             /** If gatherStatistics is true gather data about the traffic characteristics*/
             if (gatherStatistics) {
                 // TODO combine emitCurrentWindowCounts and this
-                packetsProcessed++;
-                /** report as soon as 6000 packets processed */
-                if (packetsProcessed >= 10000 && !timeChecks){
-                    LOG.info(taskId + " processed 10000 packets.");
-                    emitCurrentWindowCounts();
-                }
                 /** Increment respective counts */
                 if (timeChecks) {
                     srcIpCounter.incrementCount(packet.getSrc_ip());
                     destIpCounter.incrementCount(packet.getDst_ip());
                     destPortCounter.incrementCount(packet.getDst_port());
                 } else{
+                    //TODO incremet port counts if packet is TCP
                     state.incrementSrcIpHitCount(packet.getSrc_ip());
                     state.incrementDestIpHitCount(packet.getDst_ip());
                     state.incrementPortHitCount(packet.getDst_port());
+                    packetsProcessed++;
+                    /** report as soon as 6000 packets processed */
+                    if (packetsProcessed >= 10000){
+                        LOG.info(taskId + " processed 10000 packets.");
+                        emitCurrentWindowCounts();
+                    }
                 }
-
             }
             collector.ack(tuple);
+            packet = null;
         }
     }
 
     /**
      * Performs checks upon a packet instance depending on the verbosity specified
      * @param code an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
-     * @param packet the packet instance to be inspected
      * @return true if all the checks succeed, false otherwise
      */
-    private boolean performChecks(int code,GenericPacket packet){
+    private boolean performChecks(int code){
         if (code == 0)
             return true;
         boolean status = true;
@@ -372,14 +372,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * @return true if no problem is detected, false otherwise
      */
     private boolean checkPort(int port){
-        boolean blocked = state.isBlockedPort(port);
-        /** if the entry in ports for this port is true, then this port is blocked => drop */
-        if (!blocked && !timeChecks){
-            state.incrementPortHitCount(port);
-        } else if (blocked){
-            return false;
-        }
-        return true;
+        return !state.isBlockedPort(port);
     }
 
     /**
@@ -393,7 +386,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
 //        else if(state.isMonitoredIpAddr(addr)){
 //            report(4, addr);
 //        }
-        state.incrementSrcIpHitCount(addr);
         return true;
 
     }
@@ -406,7 +398,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private boolean checkDstIP(InetAddress addr){
         if (state.isBlockedIpAddr(addr))
             return false;
-        state.incrementSrcIpHitCount(addr);
         return true;
 
     }
@@ -442,11 +433,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         if (packet.data == null)
             return true;
         else{
-            if (state.dataIsBlocked(data)){
-                return false;
-            } else {
-                return true;
-            }
+            return !state.dataIsBlocked(data);
         }
     }
 

@@ -18,6 +18,7 @@ public class GenericPacket extends IPPacket implements Serializable{
 
     private static final long serialVersionUID = 0;
 
+    //TODO use enums for packet types.
     String type;
     protected int src_port;
     protected int dst_port;

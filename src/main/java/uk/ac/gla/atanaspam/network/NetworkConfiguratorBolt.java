@@ -72,10 +72,10 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         }
         if (numBolts.intValue() > map.size()){
             state = new ConfiguratorStateKeeper(numBolts.intValue());
-            LOG.info("USING NUM_BOLTS FOR STATEKEEPER - " + numBolts.intValue());
+            LOG.trace("USING NUM_BOLTS FOR STATEKEEPER - " + numBolts.intValue());
         } else{
             state = new ConfiguratorStateKeeper(map.size());
-            LOG.info("USING MAP SIZE FOR STATEKEEPER - " + map.size());
+            LOG.trace("USING MAP SIZE FOR STATEKEEPER - " + map.size());
         }
 
         all = new ArrayList<>();

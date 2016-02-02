@@ -22,7 +22,7 @@ import java.util.UUID;
 public class PacketSpout extends BaseRichSpout {
 
     private SpoutOutputCollector collector;
-    UUID msgId;
+    private UUID msgId;
 
     @Override
     public void open( Map conf, TopologyContext context, SpoutOutputCollector collector ) {
@@ -32,18 +32,16 @@ public class PacketSpout extends BaseRichSpout {
     @Override
     public void nextTuple() {
         msgId = UUID.randomUUID();
-       collector.emit("trigger", new Values(), msgId);
+        collector.emit("trigger", new Values(), msgId);
 
     }
 
     @Override
-    public void ack(Object id)
-    {
+    public void ack(Object id) {
     }
 
     @Override
-    public void fail(Object id)
-    {
+    public void fail(Object id) {
     }
 
     @Override

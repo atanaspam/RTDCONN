@@ -64,7 +64,9 @@ public class PacketSpoutBolt extends BaseRichBolt {
             collector.ack(tuple);
         }else {
             //backtype.storm.utils.Utils.sleep(5);
-            emitPacket(p.getPacket());
+            BasicPacket packet = p.getPacket();
+            emitPacket(packet);
+            packet = null;
             collector.ack(tuple);
         }
     }
@@ -88,6 +90,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
                     tcpPacket.getDestMacAddress(), tcpPacket.getSrc_ip(),
                     tcpPacket.getDst_ip(), tcpPacket.getSrc_port(), tcpPacket.getDst_port(),
                     tcpPacket.getFlags().toArray(), tcpPacket.getData().getData()));
+            tcpPacket = null;
         }
         else if(packet instanceof UDPPacket){
            udpPacket = (UDPPacket) packet;
@@ -95,12 +98,14 @@ public class PacketSpoutBolt extends BaseRichBolt {
             collector.emit("UDPPackets", new Values(udpPacket.getTimestamp(), udpPacket.getSourceMacAddress(),
                     udpPacket.getDestMacAddress(), udpPacket.getSrc_ip(),
                     udpPacket.getDst_ip(), udpPacket.getSrc_port(), udpPacket.getDst_port(), udpPacket.getData().getData()));
+            udpPacket = null;
         }
         else if(packet instanceof IPPacket){
             ipPacket = (IPPacket) packet;
             /** If the packet is a IPPacket then emit it to the IPPacket stream */
             collector.emit("IPPackets", new Values(ipPacket.getTimestamp(), ipPacket.getSourceMacAddress(),
                     ipPacket.getDestMacAddress(), ipPacket.getSrc_ip(), ipPacket.getDst_ip()));
+            ipPacket = null;
         }
         else {
             /** If it is not recognised, dont emit anything */
