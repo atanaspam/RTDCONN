@@ -15,6 +15,14 @@ public class HitCountPair implements KryoSerializable {
     int hitCount;
     int iterationNumber;
 
+    public int getHitCount() {
+        return hitCount;
+    }
+
+    public int getIterationNumber() {
+        return iterationNumber;
+    }
+
     public HitCountPair(){
         this.hitCount = 0;
         this.iterationNumber = -2;

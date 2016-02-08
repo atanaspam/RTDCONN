@@ -56,7 +56,7 @@ public class NetworkConfiguratorBoltTest {
         // when the report is processed
         bolt.execute(reportingTuple);
         // then the report should be stored in the state under task 2
-        assertEquals(1, bolt.state.getPortHit(1000)[2]);
+        assertEquals(1, bolt.state.getPortHit(1000)[2].getHitCount());
     }
 
     @Test
@@ -69,7 +69,7 @@ public class NetworkConfiguratorBoltTest {
         // when the report is processed
         bolt.execute(reportingTuple);
         // then the report should be stored in the state under task 2
-        assertEquals(1, bolt.state.getUnexpPortHit(1000)[2]);
+        assertEquals(1, bolt.state.getUnexpPortHit(1000)[2].getHitCount());
     }
 
     @Test
@@ -88,7 +88,7 @@ public class NetworkConfiguratorBoltTest {
         // when the report is processed
         bolt.execute(reportingTuple);
         // then the report should be stored in the state under task 2
-        assertEquals(1, bolt.state.getIpHit(ip)[2]);
+        assertEquals(1, bolt.state.getIpHit(ip)[2].getHitCount());
     }
 
     @Test
@@ -107,7 +107,7 @@ public class NetworkConfiguratorBoltTest {
         // when the report is processed
         bolt.execute(reportingTuple);
         // then the report should be stored in the state under task 2
-        assertEquals(1, bolt.state.getUnexpIpHit(ip)[2]);
+        assertEquals(1, bolt.state.getUnexpIpHit(ip)[2].getHitCount());
     }
 
     @Test
@@ -126,7 +126,7 @@ public class NetworkConfiguratorBoltTest {
         // when the report is processed
         bolt.execute(reportingTuple);
         // then the report should be stored in the state under task 2
-        assertEquals(1, bolt.state.getDroppedPacket(ip)[2]);
+        assertEquals(1, bolt.state.getDroppedPacket(ip)[2].getHitCount());
     }
 
     @Test
@@ -139,7 +139,7 @@ public class NetworkConfiguratorBoltTest {
         // when the report is processed
         bolt.execute(reportingTuple);
         // then the report should be stored in the state under task 2
-        assertEquals(1, bolt.state.getBadFlag(1)[2]);
+        assertEquals(1, bolt.state.getBadFlag(1)[2].getHitCount());
     }
 
 }

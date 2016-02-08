@@ -217,7 +217,7 @@ public class NetworkNodeBoltTest {
         Tuple tcpTuple = mockTCPPacketTuple(p);
         OutputCollector collector = mock(OutputCollector.class);
         StateKeeper s = new StateKeeper();
-        s.addBlockedData("This is not permitted".getBytes());
+        s.addBlockedData(java.util.regex.Pattern.compile("This is not permitted"));
         NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,4,0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
@@ -240,7 +240,7 @@ public class NetworkNodeBoltTest {
         Tuple udpTuple = mockUDPPacketTuple(p);
         OutputCollector collector = mock(OutputCollector.class);
         StateKeeper s = new StateKeeper();
-        s.addBlockedData("This is not permitted".getBytes());
+        s.addBlockedData(java.util.regex.Pattern.compile("This is not permitted"));
         NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,4,0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
