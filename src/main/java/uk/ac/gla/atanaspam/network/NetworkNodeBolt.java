@@ -16,10 +16,9 @@ import uk.ac.gla.atanaspam.network.utils.SlidingWindowCounter;
 import uk.ac.gla.atanaspam.network.utils.StateKeeper;
 
 import java.net.InetAddress;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +45,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private final SlidingWindowCounter<InetAddress> srcIpCounter;
     private final SlidingWindowCounter<InetAddress> destIpCounter;
     private final SlidingWindowCounter<Integer> destPortCounter;
-    private static final int NUM_WINDOW_CHUNKS = 3;
-    private static final int DEFAULT_SLIDING_WINDOW_IN_SECONDS = NUM_WINDOW_CHUNKS * 60;
+    private static final int NUM_WINDOW_CHUNKS = 2;
+    private static final int DEFAULT_SLIDING_WINDOW_IN_SECONDS = NUM_WINDOW_CHUNKS * 30;
     private static final int DEFAULT_EMIT_FREQUENCY_IN_SECONDS = DEFAULT_SLIDING_WINDOW_IN_SECONDS / NUM_WINDOW_CHUNKS;
     private static final String WINDOW_LENGTH_WARNING_TEMPLATE =
             "Actual window length is %d seconds when it should be %d seconds"
@@ -141,34 +140,43 @@ public class NetworkNodeBolt extends BaseRichBolt {
         for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet()){
             try {
                 //LOG.info("SRC IP "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if (a.getValue() > hitCount.getSrcIpHitCount().get(a.getKey()) * 2 && a.getValue() > detectionRatio ) {
+                if ((a.getValue() > (hitCount.getSrcIpHitCount().get(a.getKey()) * 2) && a.getValue() > detectionRatio) /*|| (a.getValue() > detectionRatio*2)*/) {
                     report(3, a.getKey());
                     LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
             }catch (NullPointerException e){
-                continue;
+//                if (a.getValue() > detectionRatio){
+//                    report(3, a.getKey());
+//                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
+//                }
             }
         }
         for(Map.Entry<InetAddress, Long> a : state.getDestIpHitCount().entrySet()){
             try {
-                //LOG.info("DEST IP "+ a.getKey() +" "+ a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if (a.getValue() > hitCount.getDestIpHitCount().get(a.getKey()) * 2 && a.getValue() > detectionRatio) {
+                //LOG.info("DST IP "+ a.getKey() +" "+ a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
+                if ((a.getValue() > (hitCount.getDestIpHitCount().get(a.getKey()) * 2) && a.getValue() > detectionRatio) /*|| (a.getValue() > detectionRatio*2)*/) {
                     report(4, a.getKey());
                     LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
             }catch (NullPointerException e){
-                continue;
+//                if (a.getValue() > detectionRatio){
+//                    report(4, a.getKey());
+//                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
+//                }
             }
         }
         for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet()) {
             try {
                 //LOG.info("PORT "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if (a.getValue() > hitCount.getPortHitCount().get(a.getKey()) * 2 && a.getValue() > detectionRatio) {
+                if ((a.getValue() > (hitCount.getPortHitCount().get(a.getKey()) * 2) && a.getValue() > detectionRatio) /*|| (a.getValue() > detectionRatio*2)*/){
                     report(1, a.getKey());
-                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " keys");
+                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " port hits");
                 }
             }catch (NullPointerException e){
-                continue;
+                if (a.getValue() > detectionRatio){
+                    report(1, a.getKey());
+                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " port hits");
+                }
             }
         }
 //
@@ -183,7 +191,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
 
         if (!timeChecks) {
             //TODO derive statistics from state
-            packetsProcessed = 0;
             //LOG.info("Before: " + hitCount.toString());
             hitCount.set(state.getSrcIpHitCount(), state.getDestIpHitCount(), state.getPortHitCount(), state.getFlagCount());
             //LOG.info("After: " + hitCount.toString());
@@ -281,6 +288,11 @@ public class NetworkNodeBolt extends BaseRichBolt {
                             LOG.debug(taskId + " Set gatherStatistics to " + gatherStatistics); // for debugging
                             break;
                         }
+                        case 21: { //add packetContents to list of blocked packetContents
+                            state.addBlockedData(Pattern.compile((String) tuple.getValueByField("setting")));
+                            LOG.debug(taskId + " Added a new ApplicationLayer signature to blocked.");
+                            break;
+                        }
                         //TODO add detectionRatio change command
 
                     }
@@ -311,14 +323,12 @@ public class NetworkNodeBolt extends BaseRichBolt {
             }
             /** If gatherStatistics is true gather data about the traffic characteristics*/
             if (gatherStatistics) {
-                // TODO combine emitCurrentWindowCounts and this
                 /** Increment respective counts */
                 if (timeChecks) {
                     srcIpCounter.incrementCount(packet.getSrc_ip());
                     destIpCounter.incrementCount(packet.getDst_ip());
                     destPortCounter.incrementCount(packet.getDst_port());
                 } else{
-                    //TODO incremet port counts if packet is TCP
                     state.incrementSrcIpHitCount(packet.getSrc_ip());
                     state.incrementDestIpHitCount(packet.getDst_ip());
                     state.incrementPortHitCount(packet.getDst_port());
@@ -327,6 +337,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     if (packetsProcessed >= 10000){
                         LOG.info(taskId + " processed 10000 packets.");
                         emitCurrentWindowCounts();
+                        packetsProcessed = 0;
                     }
                 }
             }
@@ -346,17 +357,23 @@ public class NetworkNodeBolt extends BaseRichBolt {
         boolean status = true;
 
         if (packet.getType().equals("TCP")){
-            if (code >0)status = status & checkPort(packet.getDst_port());
-            //if (code >0)status = status & checkPort(packet.getSrc_port());
-            if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
-            if (code >2)status = status & checkFlags(packet.getFlags());
-            if (code >3)status = status & checkApplicationLayer(packet.getData());
+            if (code == 5) return checkApplicationLayer(packet.getData());
+            else {
+                if (code > 0) status = status & checkPort(packet.getDst_port());
+                //if (code >0)status = status & checkPort(packet.getSrc_port());
+                if (code > 1) status = status & checkSrcIP(packet.getSrc_ip());
+                if (code > 2) status = status & checkFlags(packet.getFlags());
+                if (code > 3) status = status & checkApplicationLayer(packet.getData());
+            }
         }
         else if (packet.getType().equals("UDP")){
-            if (code >0)status = status & checkPort(packet.getDst_port());
-            //if (code >0)status = status & checkPort(packet.getDst_port());
-            if (code >1)status = status & checkSrcIP(packet.getSrc_ip());
-            if (code >3)status = status & checkApplicationLayer(packet.getData());
+            if (code == 5) return checkApplicationLayer(packet.getData());
+            else {
+                if (code > 0) status = status & checkPort(packet.getDst_port());
+                //if (code >0)status = status & checkPort(packet.getDst_port());
+                if (code > 1) status = status & checkSrcIP(packet.getSrc_ip());
+                if (code > 3) status = status & checkApplicationLayer(packet.getData());
+            }
         }
         else if (packet.getType().equals("IPP")){
             if (code >0)status = status & checkSrcIP(packet.getSrc_ip());

@@ -6,8 +6,13 @@ import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
+ * Stores the state of each NetworkNodeBolt. The state includes current hit counts for specific packet fields
+ * as well as the values that should not be permitted.
+ * Also abstracts some of the complexity related to checking those values.
  * @author atanaspam
  * @version 0.1
  * @created 14/11/2015
@@ -24,7 +29,7 @@ public class StateKeeper implements Serializable{
     private HashMap<InetAddress, Long> destIpHitCount;
     private HashMap<Integer, Long> portHitCount;
     private Long[] flagCount;
-    private HashSet<PacketContents> blockedData;
+    private ArrayList<Pattern> blockedData;
 
     public StateKeeper(){
         blockedPorts = new boolean[65535];
@@ -35,7 +40,7 @@ public class StateKeeper implements Serializable{
         destIpHitCount = new HashMap<>();
         portHitCount = new HashMap<>();
         flagCount = new Long[9];
-        blockedData = new HashSet<>();
+        blockedData = new ArrayList<>();
         for(int i=0;i<9;i++)
             flagCount[i] = new Long(0);
     }
@@ -142,21 +147,24 @@ public class StateKeeper implements Serializable{
         this.flagCount = flagCount;
     }
 
-    public HashSet<PacketContents> getBlockedData() {
+    public ArrayList<Pattern> getBlockedData() {
         return blockedData;
     }
 
-    public void setBlockedData(HashSet<PacketContents> blockedData) {
+    public void setBlockedData(ArrayList<Pattern> blockedData) {
         this.blockedData = blockedData;
     }
 
     public boolean dataIsBlocked(PacketContents data){
-        return blockedData.contains(data);
+        for (Pattern p : blockedData){
+            Matcher m = p.matcher(new String(data.getData()));
+            if (m.find( )) { return true;}
+        }
+        return false;
     }
 
-    public void addBlockedData(byte[] data){ blockedData.add(new PacketContents(data));}
+    public void addBlockedData(Pattern pattern){ blockedData.add(pattern);}
 
-    public void addBlockedData(PacketContents data){ blockedData.add(data);}
 
     public boolean flush(){
         for(int i=0; i<65535; i++){

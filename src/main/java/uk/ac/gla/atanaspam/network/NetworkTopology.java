@@ -11,6 +11,8 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.ac.gla.atanaspam.network.utils.HitCountPair;
+import uk.ac.gla.atanaspam.network.utils.InetAddressSerializer;
 import uk.ac.gla.atanaspam.network.utils.StateKeeper;
 
 import java.net.InetAddress;
@@ -96,11 +98,13 @@ public class NetworkTopology {
 
 
         Config conf = new Config();
+        conf.registerSerialization(InetAddress.class, InetAddressSerializer.class);
+        conf.registerSerialization(HitCountPair.class);
+        conf.setFallBackOnJavaSerialization(false);
         conf.put("timeCheck", false);
         conf.put("boltNum", NUM_BOLTS);
         LOG.info("NUM OF BOLTS :"+NUM_BOLTS);
         conf.put("filePath", filePath);
-        //conf.registerSerialization(StateKeeper.class);
 
         if (mode.equals("remote")) {
             conf.setNumWorkers(NUM_BOLTS + 1);
@@ -117,6 +121,7 @@ public class NetworkTopology {
             }
         } else if (mode.equals("local")){
             LocalCluster cluster = new LocalCluster();
+            conf.setMaxSpoutPending(5000);
             cluster.submitTopology(topologyName, conf, builder.createTopology());
             Utils.sleep(5000*1000);
             cluster.killTopology(topologyName);
@@ -125,28 +130,5 @@ public class NetworkTopology {
             LOG.error("Invalid mode specified. Terminating.");
             System.exit(1);
         }
-    }
-    @Deprecated
-    private static Config initializeConfig(Config conf){
-        ArrayList<InetAddress> blocked = new ArrayList<>();
-        ArrayList<InetAddress> monitored = new ArrayList<>();
-        ArrayList<boolean[]> badFlags = new ArrayList<>();
-        ArrayList<Integer> blockedPorts = new ArrayList<>();
-        /*
-        try {
-            blocked.add(InetAddress.getByName("74.125.136.109"));
-            monitored.add(InetAddress.getByName("192.168.1.1"));
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }*/ //This is commented as we dont want to block anything right now
-
-        conf.put("timeCheck", false);
-        conf.put("node_0_lvl_0", 1);
-        conf.put("node_0_lvl_1", 0);
-        conf.put("blockedIp", blocked);
-        conf.put("monitoredIp", monitored);
-        conf.put("badFlags", badFlags);
-        conf.put("blockedPorts", blockedPorts);
-        return conf;
     }
 }

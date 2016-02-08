@@ -18,6 +18,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Listens for events reported from other bolts and pushes new configurations to them accordingly
@@ -88,11 +89,14 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     public void execute( Tuple tuple ) {
         if(TupleUtils.isTick(tuple)){
             LOG.info(state.toString());
-            if (round != 10){
+            if (round == 4){
+//                LOG.info("Changing anomaly...");
+//                emitBulkConfig(spouts,30, 1);
+//                emitBulkConfig(spouts,31, 40);
+//                round++;
+            }else{
                 LOG.info("Round: "+ round);
                 round++;
-            }else{
-                //emitBulkConfig(spouts,30, 1);
             }
             //TODO emit config according to current stats
             collector.ack(tuple);
@@ -105,41 +109,59 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             switch (anomalyType) {
                 case 1: {   // 1 means lots of hits to a single port
                     Integer port = (Integer) tuple.getValueByField("anomalyData");
-                    state.addPortHit(port, srcTasktId);
-                    //System.out.println("Problem with port " + port); // for testing
+                    if( state.addPortHit(port, srcTasktId, round)){
+                        //TODO here we handle blocking or restructuring
+                        LOG.info("Lots of hits to " + port);
+                    }
                     break;
                 }
                 case 2: {    /* 2 means hits to an unexpected port */
                     int port = (Integer) tuple.getValueByField("anomalyData");
-                    //System.out.println("got "+ count + " form " + srcTasktId);
-                    state.addUnexpPortHit(port, srcTasktId);
+                    if( state.addUnexpPortHit(port, srcTasktId, round)){
+                        //TODO here we handle blocking or restructuring
+                        LOG.info("Unexpected hit to" + port);
+                    }
                     break;
                 }
                 case 3: {    /* 3 means lots of hits to the same src IP */
                     InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                    state.addIpHit(ip, srcTasktId);
+                    if(state.addIpHit(ip, srcTasktId, round)){
+                        //TODO here we handle blocking or restructuring
+                        LOG.info("Lots of hits to srcIP:  " + ip);
+                    }
                     break;
                 }
                 case 4: {    /* 4 means lots of hits to the same dest IP */
                     InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                    state.addIpHit(ip, srcTasktId);
+                    if(state.addIpHit(ip, srcTasktId, round)){
+                        //TODO here we handle blocking or restructuring
+                        LOG.info("Lots of hits to dstIP:  " + ip);
+                    }
                     break;
                 }
                 case 5: {    /* 5 means hits to an unexpected IP */
                     InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                    state.addUnexpIpHit(ip, srcTasktId);
+                    if(state.addUnexpIpHit(ip, srcTasktId, round)){
+                        //TODO here we handle blocking or restructuring
+                        LOG.info("Unexpected hit to:  " + ip);
+                    }
                     break;
                 }
                 case 6: {    /* 6 means a dropped packet */
                     InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                    state.addDroppedPacket(ip, srcTasktId);
-                    //System.out.println("Dropped: " + ip.getHostAddress()); // for testing
+                    if(state.addDroppedPacket(ip, srcTasktId, round)){
+                        //TODO here we handle blocking or restructuring
+                        LOG.info("Dropped: " + ip);
+                    }
                     break;
                 }
                 case 7: { /* anomalious flag trafic */
-                    //InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
                     int flagNum = (Integer) tuple.getValueByField("anomalyData");
-                    state.addBadFlagHit(flagNum, srcTasktId);
+                    if(state.addBadFlagHit(flagNum, srcTasktId, round)){
+                        //TODO here we handle blocking or restructuring
+                        LOG.info("Anomalous flag detected...");
+                        //TODO this seems to be unused....
+                    }
                 }
                 case 8: { /* Other */
                     //TODO implement more
@@ -166,7 +188,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     }
 
     /**
-     * Emits a a command to a specific bolt only.
+     * Emits a command to a specific bolt only.
      * @param dest the taskID that needs to change its config
      * @param code code for the command to be executed
      * @param setting the new value (command specific)
@@ -197,6 +219,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         int[] blockedPorts = {};
         ArrayList<InetAddress> blockedIP = new ArrayList<>();
         ArrayList<InetAddress> monitoredIP = new ArrayList<>();
+        ArrayList<Pattern> blockedData = new ArrayList<>();
         try {
             //blockedIP .add(InetAddress.getByName("192.168.1.2"));
             //monitoredIP.add(InetAddress.getByName("192.168.1.2"));
@@ -204,8 +227,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         TCPFlags[] badflags = {};
 
         //emitBulkConfig(lvl0, 20, false); (this is default)   // top level does not gather statistics
-        emitBulkConfig(lvl0, 10, 0);        // top level perfroms no checks
-        emitBulkConfig(lvl1, 10,3);
+        emitBulkConfig(lvl0, 10, 3);        // top level perfroms no checks
+        emitBulkConfig(lvl1, 10,5);
         emitBulkConfig(lvl2, 20, true);
         emitBulkConfig(lvl2, 10, 0);
         for(int port : blockedPorts)
@@ -216,7 +239,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             emitBulkConfig(all, 15, ip);
         for(TCPFlags flags : badflags)
             emitBulkConfig(all, 17, flags);
-        emitBulkConfig(all, 19, false);
+        //emitBulkConfig(lvl2, 19, true);
     }
 
 

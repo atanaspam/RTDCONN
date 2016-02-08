@@ -39,8 +39,8 @@ public class PacketSpoutBolt extends BaseRichBolt {
         String filePath = (String) conf.get("filePath");
         p = new PacketGenerator(filePath, true, false);
         p.configure(new ArrayList<InetAddress>(), new ArrayList<InetAddress>(), new ArrayList<Integer>(),
-                new ArrayList<Integer>(), new ArrayList<>(),0);
-        p.setAnomalousTrafficPercentage(5);
+                new ArrayList<Integer>(), new ArrayList<>(),1);
+        p.setAnomalousTrafficPercentage(10);
     }
 
     @Override
@@ -57,13 +57,18 @@ public class PacketSpoutBolt extends BaseRichBolt {
                 case 30:{
                     int anomaly = (Integer) tuple.getValueByField("setting");
                     LOG.info("Changing anomaly to "+ anomaly);
-//                    p.configure(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),anomaly);
+                    p.configure(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),anomaly);
+                }
+                case 31:{
+                    int anomaly = (Integer) tuple.getValueByField("setting");
+                    LOG.info("Changing anomaly percentage to "+ anomaly);
+                    p.setAnomalousTrafficPercentage(anomaly);
                 }
             }
             //TODO configure packetGenerator
             collector.ack(tuple);
         }else {
-            //backtype.storm.utils.Utils.sleep(5);
+            backtype.storm.utils.Utils.sleep(3);
             BasicPacket packet = p.getPacket();
             emitPacket(packet);
             packet = null;
