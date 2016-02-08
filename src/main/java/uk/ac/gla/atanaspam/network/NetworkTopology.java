@@ -16,6 +16,7 @@ import uk.ac.gla.atanaspam.network.utils.InetAddressSerializer;
 import uk.ac.gla.atanaspam.network.utils.StateKeeper;
 
 import java.net.InetAddress;
+import java.net.Inet4Address;
 import java.util.ArrayList;
 
 
@@ -99,7 +100,9 @@ public class NetworkTopology {
 
         Config conf = new Config();
         conf.registerSerialization(InetAddress.class, InetAddressSerializer.class);
+        conf.registerSerialization(Inet4Address.class);
         conf.registerSerialization(HitCountPair.class);
+        conf.registerSerialization(boolean[].class);
         conf.setFallBackOnJavaSerialization(false);
         conf.put("timeCheck", false);
         conf.put("boltNum", NUM_BOLTS);

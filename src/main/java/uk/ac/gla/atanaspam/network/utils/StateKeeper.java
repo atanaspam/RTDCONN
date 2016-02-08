@@ -32,7 +32,7 @@ public class StateKeeper implements Serializable{
     private ArrayList<Pattern> blockedData;
 
     public StateKeeper(){
-        blockedPorts = new boolean[65535];
+        blockedPorts = new boolean[65536];
         blockedIpAddr = new HashSet<>();
         monitoredIpAddr = new HashSet<>();
         blockedFlags = new HashSet<>();

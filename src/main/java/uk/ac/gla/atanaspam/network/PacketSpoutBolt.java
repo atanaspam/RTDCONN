@@ -68,7 +68,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
             //TODO configure packetGenerator
             collector.ack(tuple);
         }else {
-            backtype.storm.utils.Utils.sleep(3);
+            //backtype.storm.utils.Utils.sleep(3);
             BasicPacket packet = p.getPacket();
             emitPacket(packet);
             packet = null;
