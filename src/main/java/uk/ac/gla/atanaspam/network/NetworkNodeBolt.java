@@ -471,33 +471,33 @@ public class NetworkNodeBolt extends BaseRichBolt {
         /** if the packet originates from the TCPPackets Stream its a TCPPacket
          * when its a TCP packet we extract the appropriate fields */
         if ("TCPPackets".equals(tuple.getSourceStreamId())) {
-            long timestamp = (Long) tuple.getValueByField("timestamp");
+            long timestamp = (long) tuple.getValueByField("timestamp");
             String srcMAC = (String) tuple.getValueByField("srcMAC");
             String destMAC = (String) tuple.getValueByField("destMAC");
             InetAddress srcIP = (InetAddress) tuple.getValueByField("srcIP");
             InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
-            int srcPort = (Integer) tuple.getValueByField("srcPort");
-            int destPort = (Integer) tuple.getValueByField("destPort");
+            int srcPort = (int) tuple.getValueByField("srcPort");
+            int destPort = (int) tuple.getValueByField("destPort");
             boolean[] flags = (boolean[]) tuple.getValueByField("flags");
             byte[] data = (byte[]) tuple.getValueByField("data");
             return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort, new TCPFlags(flags), data);
 
             /** if the packet originates from the UDPPackets Stream its a UDPPacket */
         } else if ("UDPPackets".equals(tuple.getSourceStreamId())) {
-            long timestamp = (Long) tuple.getValueByField("timestamp");
+            long timestamp = (long) tuple.getValueByField("timestamp");
             String srcMAC = (String) tuple.getValueByField("srcMAC");
             String destMAC = (String) tuple.getValueByField("destMAC");
             InetAddress srcIP = (InetAddress) tuple.getValueByField("srcIP");
             InetAddress destIP = (InetAddress) tuple.getValueByField("destIP");
-            int srcPort = (Integer) tuple.getValueByField("srcPort");
-            int destPort = (Integer) tuple.getValueByField("destPort");
+            int srcPort = (int) tuple.getValueByField("srcPort");
+            int destPort = (int) tuple.getValueByField("destPort");
             byte[] data = (byte[]) tuple.getValueByField("data");
             return new GenericPacket(timestamp, srcMAC, destMAC, srcIP, destIP, srcPort, destPort, data);
 
             /** if the packet originates from the IPPackets Stream its a IPPacket */
             /** an IP packet is a packet that is not UDP or TCP and therefore we only extract basic data */
         } else if ("IPPackets".equals(tuple.getSourceStreamId())) {
-            long timestamp = (Long) tuple.getValueByField("timestamp");
+            long timestamp = (long) tuple.getValueByField("timestamp");
             String srcMAC = (String) tuple.getValueByField("srcMAC");
             String destMAC = (String) tuple.getValueByField("destMAC");
             InetAddress srcIP = (InetAddress) tuple.getValueByField("srcIP");

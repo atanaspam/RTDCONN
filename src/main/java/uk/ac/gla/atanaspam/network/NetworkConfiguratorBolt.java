@@ -103,8 +103,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         }
         else {
             /** obtain the message from a bolt */
-            int srcTasktId = (Integer) tuple.getValueByField("taskId");
-            int anomalyType = (Integer) tuple.getValueByField("anomalyType");
+            int srcTasktId = (int) tuple.getValueByField("taskId");
+            int anomalyType = (int) tuple.getValueByField("anomalyType");
             /** we check for all known error codes */
             switch (anomalyType) {
                 case 1: {   // 1 means lots of hits to a single port
@@ -238,8 +238,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         for(InetAddress ip : monitoredIP)
             emitBulkConfig(all, 15, ip);
         for(TCPFlags flags : badflags)
-            emitBulkConfig(all, 17, flags);
-        //emitBulkConfig(lvl2, 19, true);
+            emitBulkConfig(all, 17, flags);emitBulkConfig(lvl2, 19, true);
     }
 
 
