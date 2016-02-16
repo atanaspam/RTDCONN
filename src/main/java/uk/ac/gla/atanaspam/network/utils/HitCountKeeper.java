@@ -1,10 +1,10 @@
 package uk.ac.gla.atanaspam.network.utils;
 
+
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author atanaspam
@@ -15,10 +15,11 @@ public class HitCountKeeper implements Serializable{
 
     //TODO add version UID
     //TODO change serializer
+    public double detectionRatio = 1.5;
 
-    private HashMap<InetAddress, Long> srcIpHitCount;
-    private HashMap<InetAddress, Long> destIpHitCount;
-    private HashMap<Integer, Long> portHitCount;
+    private HashMap<InetAddress, CMAPair> srcIpHitCount;
+    private HashMap<InetAddress, CMAPair> destIpHitCount;
+    private HashMap<Integer, CMAPair> portHitCount;
     private Long[] flagCount;
 
     public HitCountKeeper(){
@@ -30,22 +31,18 @@ public class HitCountKeeper implements Serializable{
             flagCount[i] = new Long(0);
     }
 
-    public void set(HashMap<InetAddress, Long> newSrcIpHitCount, HashMap<InetAddress, Long> newDestIpHitCount,
-                    HashMap<Integer, Long> newPortHitCount, Long[] newFlagCount){
+    public void set(HashMap<InetAddress, CMAPair> newSrcIpHitCount, HashMap<InetAddress, CMAPair> newDestIpHitCount,
+                    HashMap<Integer, CMAPair> newPortHitCount, Long[] newFlagCount){
         srcIpHitCount = new HashMap<>(newSrcIpHitCount);
         destIpHitCount = new HashMap<>(newDestIpHitCount);
         portHitCount = new HashMap<>(newPortHitCount);
         flagCount = newFlagCount;
     }
 
-
-    public Long[] getFlagCount() {
-        return flagCount;
+    public void setDetectionRatio(double detectionRatio) {
+        this.detectionRatio = detectionRatio;
     }
 
-    public void setFlagCount(Long[] flagCount) {
-        this.flagCount = flagCount;
-    }
 
     public void clearHitCounts(){
         srcIpHitCount.clear();
@@ -55,61 +52,128 @@ public class HitCountKeeper implements Serializable{
             flagCount[i] = new Long(0);
     }
 
-    public void incrementSrcIpHitCount(InetAddress addr){
-        if(srcIpHitCount.get(addr) != null){
-            srcIpHitCount.put(addr, srcIpHitCount.get(addr)+1);
+    /**
+     * Methods related to Source Ip Addresses
+     */
+
+    /**
+     * Add a new value to the CMA entry for this address. If it does not exist create it.
+     * @see CMAPair
+     * @param addr The address data is added for
+     * @param value The new value to be added.
+     * @return true if the value to add is larger than the current CMA before the update
+     */
+    public boolean addSrcIpHitCount(InetAddress addr, int value){
+        CMAPair a = srcIpHitCount.get(addr);
+        boolean result = false;
+        if(a != null){
+            result = value > (a.getCumulativeMovingAverage() * detectionRatio);
+            a.addValue(value);
+            srcIpHitCount.put(addr, a);
         } else{
-            srcIpHitCount.put(addr, new Long(1));
+            srcIpHitCount.put(addr, new CMAPair(value, 1));
         }
+        return result;
     }
 
-    public HashMap<InetAddress, Long> getSrcIpHitCount() {
+    /**
+     * Get the CMA for a specific address
+     * @param addr the address we care fore
+     * @return the CMA or null
+     */
+    public int getSrcIpCMA(InetAddress addr){
+        return srcIpHitCount.get(addr).getCumulativeMovingAverage();
+    }
+
+    public HashMap<InetAddress, CMAPair> getSrcIpHitCount() {
         return srcIpHitCount;
     }
 
-    public void setSrcIpHitCount(HashMap<InetAddress, Long> srcIpHitCount) {
-        this.srcIpHitCount = srcIpHitCount;
-    }
+    /**
+     * Methods related to Destination Ip addresses
+     */
 
-    public void incrDesrIpHitCount(InetAddress addr){
-        if(destIpHitCount.get(addr) != null){
-            destIpHitCount.put(addr, destIpHitCount.get(addr)+1);
+    /**
+     * Add a new value to the CMA entry for this address. If it does not exist create it.
+     * @see CMAPair
+     * @param addr The address data is added for
+     * @param value The new value to be added.
+     * @return true if the value to add is larger than the current CMA before the update
+     */
+    public boolean addDesIpHitCount(InetAddress addr, int value){
+        CMAPair a = destIpHitCount.get(addr);
+        boolean result = false;
+        if(a != null){
+            result = value > (a.getCumulativeMovingAverage() * detectionRatio);
+            a.addValue(value);
+            destIpHitCount.put(addr, a);
         } else{
-            destIpHitCount.put(addr, new Long(1));
+            destIpHitCount.put(addr, new CMAPair(value, 1));
         }
+        return result;
     }
 
-    public HashMap<InetAddress, Long> getDestIpHitCount() {
+    /**
+     * Get the CMA for a specific address
+     * @param addr the address we care fore
+     * @return the CMA or null
+     */
+    public int getDstIpCMA(InetAddress addr){
+        return destIpHitCount.get(addr).cumulativeMovingAverage;
+    }
+
+    public HashMap<InetAddress, CMAPair> getDestIpHitCount() {
         return destIpHitCount;
     }
 
-    public void setDestIpHitCount(HashMap<InetAddress, Long> destIpHitCount) {
-        this.destIpHitCount = destIpHitCount;
-    }
 
-    public void incrementPortHitCount(int port) {
-        if (portHitCount.get(port) != null) {
-            portHitCount.put(port, (portHitCount.get(port) + 1));
+    /**
+     * Methods related to Ports
+     */
+
+    /**
+     * Add a new value to the CMA entry for this port. If it does not exist create it.
+     * @see CMAPair
+     * @param port The port data is added for.
+     * @param value The new value to be added.
+     * @return true if the value to add is larger than the current CMA before the update
+     */
+    public boolean addPortHitCount(int port, int value) {
+        CMAPair a = portHitCount.get(port);
+        boolean result = false;
+        if (a != null) {
+            result = value > (a.getCumulativeMovingAverage() * detectionRatio);
+            a.addValue(value);
+            portHitCount.put(port, a);
         } else {
-            portHitCount.put(port, new Long(1));
+            portHitCount.put(port, new CMAPair());
         }
+        return result;
     }
 
-    public HashMap<Integer, Long> getPortHitCount() {
+    public HashMap<Integer, CMAPair> getPortHitCount() {
         return portHitCount;
     }
 
-    public void setPortHitCount(HashMap<Integer, Long> portHitCount) {
-        this.portHitCount = portHitCount;
-    }
+    /**
+     * Methods relatedto Flags
+     */
 
     public void incrementFlagCount(int flag){
         flagCount[flag] = flagCount[flag] +1;
     }
 
-    public String toString(){
+    public Long[] getFlagCount() {
+        return flagCount;
+    }
+
+    public void setFlagCount(Long[] flagCount) {
+        this.flagCount = flagCount;
+    }
+
+    @Override
+    public String toString() {
         return String.format("src: %s%ndest: %s%nport: %s%nflag:%s%n",
                 srcIpHitCount.toString(), destIpHitCount.toString(), portHitCount.toString(), Arrays.toString(flagCount));
     }
-
 }

@@ -1,6 +1,7 @@
 package uk.ac.gla.atanaspam.network;
 
 import backtype.storm.Config;
+import backtype.storm.scheduler.Cluster;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
@@ -13,7 +14,8 @@ import static uk.ac.gla.atanaspam.network.utils.MockTupleHelpers.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import uk.ac.gla.atanaspam.network.utils.StateKeeper;
+import sun.nio.ch.Net;
+import uk.ac.gla.atanaspam.network.utils.*;
 import uk.ac.gla.atanaspam.pcapj.*;
 
 import java.net.InetAddress;
@@ -36,13 +38,13 @@ public class NetworkNodeBoltTest {
     public void init() {
         try {
             tcpPacket = new TCPPacket(new Long(123456789), "FF:FF:FF:FF:FF:FF", "FF:FF:FF:FF:FF:FF",
-                    InetAddress.getByName("192.168.1.1"), InetAddress.getByName("192.168.1.1"), 1000, 1000,
+                    InetAddress.getByName("192.168.1.1"), InetAddress.getByName("192.168.1.2"), 1000, 2000,
                     new TCPFlags(false, false, false, false, false, false, false, false), new PacketContents(new byte[0]));
             udpPacket = new UDPPacket(new Long(123456789), "FF:FF:FF:FF:FF:FF", "FF:FF:FF:FF:FF:FF",
-                    InetAddress.getByName("192.168.1.1"), InetAddress.getByName("192.168.1.1"), 1000, 1000,
+                    InetAddress.getByName("192.168.1.1"), InetAddress.getByName("192.168.1.2"), 1000, 2000,
                     new PacketContents(new byte[0]));
             ipPacket = new IPPacket(new Long(123456789), "FF:FF:FF:FF:FF:FF", "FF:FF:FF:FF:FF:FF",
-                    InetAddress.getByName("192.168.1.1"), InetAddress.getByName("192.168.1.1"));
+                    InetAddress.getByName("192.168.1.1"), InetAddress.getByName("192.168.1.2"));
         } catch (Exception e) {
 
         }
@@ -69,9 +71,9 @@ public class NetworkNodeBoltTest {
         // given
         Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        s.addBlockedFlag(new TCPFlags(false,false,false,false,false,false,false,false));
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,3,0);
+        ChecksPerformer c = new BasicFirewallChecker();
+        c.addFlag(new TCPFlags(false,false,false,false,false,false,false,false),1);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when
         bolt.execute(tcpTuple);
@@ -83,9 +85,9 @@ public class NetworkNodeBoltTest {
         // given an anomalous TCP packet and disabled
         Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        s.addBlockedFlag(new TCPFlags(false,false,false,false,false,false,false,false));
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,0,0);
+        ChecksPerformer c = new BasicFirewallChecker();
+        c.addFlag(new TCPFlags(false,false,false,false,false,false,false,false), 1);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), new EmptyFirewallChecker(), 0, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(tcpTuple);
@@ -109,13 +111,13 @@ public class NetworkNodeBoltTest {
      * Show that given a packet with a specific anomaly the system reacts accordingly - Drop
      */
     @Test
-    public void shouldDropIfBlockedTCPPort() {
+    public void shouldDropIfBlockedSrcTCPPort() {
         // given a TCP packet with port 1000 and a rule that blocks port 1000
         Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        s.setBlockedPort(1000, true);
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,3,0);
+        ChecksPerformer c = new BasicFirewallChecker();
+        c.addPort(1000, 1);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(tcpTuple);
@@ -123,13 +125,27 @@ public class NetworkNodeBoltTest {
         verify(collector).emit(eq("Reporting"), any(Values.class));
     }
     @Test
-    public void shouldDropIfBlockedUDPPort() {
+    public void shouldDropIfBlockedDstTCPPort() {
+        // given a TCP packet with port 1000 and a rule that blocks port 1000
+        Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
+        OutputCollector collector = mock(OutputCollector.class);
+        ChecksPerformer c = new BasicFirewallChecker();
+        c.addPort(2000, 0);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
+        bolt.prepare(mockConf(), mockContext(), collector);
+        // when the packet is processed
+        bolt.execute(tcpTuple);
+        // then packet is dropped
+        verify(collector).emit(eq("Reporting"), any(Values.class));
+    }
+    @Test
+    public void shouldDropIfBlockedSrcUDPPort() {
         // given a UDP packet with port 1000 and a rule that blocks port 1000
         Tuple udpTuple = mockUDPPacketTuple(udpPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        s.setBlockedPort(1000, true);
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,3,0);
+        ChecksPerformer c = new BasicFirewallChecker();
+        c.addPort(1000, 1);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(udpTuple);
@@ -137,16 +153,30 @@ public class NetworkNodeBoltTest {
         verify(collector).emit(eq("Reporting"), any(Values.class));
     }
     @Test
-    public void shouldDropIfBlockedTCPIp() {
+    public void shouldDropIfBlockedDstUDPPort() {
+        // given a UDP packet with port 1000 and a rule that blocks port 1000
+        Tuple udpTuple = mockUDPPacketTuple(udpPacket);
+        OutputCollector collector = mock(OutputCollector.class);
+        ChecksPerformer c = new BasicFirewallChecker();
+        c.addPort(2000, 0);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
+        bolt.prepare(mockConf(), mockContext(), collector);
+        // when the packet is processed
+        bolt.execute(udpTuple);
+        // then packet is dropped
+        verify(collector).emit(eq("Reporting"), any(Values.class));
+    }
+    @Test
+    public void shouldDropIfBlockedTCPSrcIp() {
         // given a TCP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
         Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
+        ChecksPerformer c = new BasicFirewallChecker();
         try {
-            s.addBlockedIpAddr(InetAddress.getByName("192.168.1.1"));
+            c.addIpAddress(InetAddress.getByName("192.168.1.1"), 1);
         } catch (UnknownHostException e) {
         }
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s, false, 3, 0);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(tcpTuple);
@@ -154,16 +184,33 @@ public class NetworkNodeBoltTest {
         verify(collector).emit(eq("Reporting"), any(Values.class));
     }
     @Test
-    public void shouldDropIfBlockedUDPIp() {
+    public void shouldDropIfBlockedTCPDstIp() {
+        // given a TCP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
+        Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
+        OutputCollector collector = mock(OutputCollector.class);
+        ChecksPerformer c = new BasicFirewallChecker();
+        try {
+            c.addIpAddress(InetAddress.getByName("192.168.1.2"), 0);
+        } catch (UnknownHostException e) {
+        }
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
+        bolt.prepare(mockConf(), mockContext(), collector);
+        // when the packet is processed
+        bolt.execute(tcpTuple);
+        // then the packet is dropped
+        verify(collector).emit(eq("Reporting"), any(Values.class));
+    }
+    @Test
+    public void shouldDropIfBlockedUDPSrcIp() {
         // given a UDP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
         Tuple udpTuple = mockUDPPacketTuple(udpPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
+        ChecksPerformer c = new BasicFirewallChecker();
         try {
-            s.addBlockedIpAddr(InetAddress.getByName("192.168.1.1"));
+            c.addIpAddress(InetAddress.getByName("192.168.1.1"), 1);
         } catch (UnknownHostException e) {
         }
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s, false, 3, 0);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(udpTuple);
@@ -171,16 +218,50 @@ public class NetworkNodeBoltTest {
         verify(collector).emit(eq("Reporting"), any(Values.class));
     }
     @Test
-    public void shouldDropIfBlockedIPIp() {
+    public void shouldDropIfBlockedUDPDstIp() {
+        // given a UDP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
+        Tuple udpTuple = mockUDPPacketTuple(udpPacket);
+        OutputCollector collector = mock(OutputCollector.class);
+        ChecksPerformer c = new BasicFirewallChecker();
+        try {
+            c.addIpAddress(InetAddress.getByName("192.168.1.2"), 0);
+        } catch (UnknownHostException e) {
+        }
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
+        bolt.prepare(mockConf(), mockContext(), collector);
+        // when the packet is processed
+        bolt.execute(udpTuple);
+        // then the packet is dropped
+        verify(collector).emit(eq("Reporting"), any(Values.class));
+    }
+    @Test
+    public void shouldDropIfBlockedSrcIPIp() {
         // given an IP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
         Tuple ipTuple = mockIPPacketTuple(ipPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
+        ChecksPerformer c = new BasicFirewallChecker();
         try {
-            s.addBlockedIpAddr(InetAddress.getByName("192.168.1.1"));
+            c.addIpAddress(InetAddress.getByName("192.168.1.1"), 1);
         } catch (UnknownHostException e) {
         }
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s, false, 3, 0);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
+        bolt.prepare(mockConf(), mockContext(), collector);
+        // when the packet is processed
+        bolt.execute(ipTuple);
+        // then the packet is dropped
+        verify(collector).emit(eq("Reporting"), any(Values.class));
+    }
+    @Test
+    public void shouldDropIfBlockedDstIPIp() {
+        // given an IP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
+        Tuple ipTuple = mockIPPacketTuple(ipPacket);
+        OutputCollector collector = mock(OutputCollector.class);
+        ChecksPerformer c = new BasicFirewallChecker();
+        try {
+            c.addIpAddress(InetAddress.getByName("192.168.1.2"), 0);
+        } catch (UnknownHostException e) {
+        }
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(ipTuple);
@@ -192,9 +273,9 @@ public class NetworkNodeBoltTest {
         // given a TCP packet with all flags to false and a rule to block those flags
         Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        s.addBlockedFlag(new TCPFlags(false,false,false,false,false,false,false,false));
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,3,1);
+        ChecksPerformer c = new BasicFirewallChecker();
+        c.addFlag(new TCPFlags(false,false,false,false,false,false,false,false), 1);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 1, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(tcpTuple);
@@ -216,9 +297,9 @@ public class NetworkNodeBoltTest {
         }
         Tuple tcpTuple = mockTCPPacketTuple(p);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        s.addBlockedData(java.util.regex.Pattern.compile("This is not permitted"));
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,4,0);
+        ChecksPerformer c = new DPIFirewallChecker();
+        c.addPattern(java.util.regex.Pattern.compile("This is not permitted"),1);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 2, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(tcpTuple);
@@ -239,9 +320,9 @@ public class NetworkNodeBoltTest {
         }
         Tuple udpTuple = mockUDPPacketTuple(p);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        s.addBlockedData(java.util.regex.Pattern.compile("This is not permitted"));
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,false,4,0);
+        ChecksPerformer c = new DPIFirewallChecker();
+        c.addPattern(java.util.regex.Pattern.compile("This is not permitted"),1);
+        NetworkNodeBolt bolt = new NetworkNodeBolt(new EmptyStatisticsGatherer(), c, 2, 0, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(udpTuple);
@@ -250,32 +331,39 @@ public class NetworkNodeBoltTest {
     }
 
     @Test
-    public void shouldIncrementPortHitCount() {
+    public void shouldIncrementPortHitCountWithClassicCMA() {
         // given a TCP packet with port 1000
+        StatisticsGatherer s;
         Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,true,0,0);
+        s = new ClassicCMAStatistics();
+        NetworkNodeBolt bolt = new NetworkNodeBolt(s, new EmptyFirewallChecker(), 0, 1, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when it is processed
         bolt.execute(tcpTuple);
         // then portHitCount is incremented
-        assertEquals(new Long(1), s.getPortHitCount().get(1000));
+        ClassicCMAStatistics s1 = (ClassicCMAStatistics) s;
+        assertEquals(1, (int) s1.getSrcPortHitCount().get(1000));
+        assertEquals(1, (int) s1.getDstPortHitCount().get(2000));
     }
+
+
     @SuppressWarnings("SuspiciousMethodCalls")
     @Test
     public void shouldIncrementIpHitCount() {
         // given a TCP packet with an IP address 192.168.1.1 and a rule that blocks 192.168.1.1
+        StatisticsGatherer s;
         Tuple tcpTuple = mockTCPPacketTuple(tcpPacket);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,true,0,0);
+        s = new ClassicCMAStatistics();
+        NetworkNodeBolt bolt = new NetworkNodeBolt(s, new EmptyFirewallChecker(), 0, 1, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
-        // when the packet is processed
+        // when it is processed
         bolt.execute(tcpTuple);
-        // then srcIpHitCount and dstIpHitCount are incremented
-        assertEquals(new Long(1), s.getSrcIpHitCount().get(tcpTuple.getValueByField("srcIP")));
-        assertEquals(new Long(1), s.getDestIpHitCount().get(tcpTuple.getValueByField("destIP")));
+        // then portHitCount is incremented
+        ClassicCMAStatistics s1 = (ClassicCMAStatistics) s;
+        assertEquals(1, (int) s1.getSrcIpHitCount().get(tcpTuple.getValueByField("srcIP")));
+        assertEquals(1, (int) s1.getDstIpHitCount().get(tcpTuple.getValueByField("destIP")));
     }
     @Test
     public void shouldIncrementFlagCounts() {
@@ -291,15 +379,16 @@ public class NetworkNodeBoltTest {
         }
         Tuple tcpTuple = mockTCPPacketTuple(p);
         OutputCollector collector = mock(OutputCollector.class);
-        StateKeeper s = new StateKeeper();
-        NetworkNodeBolt bolt = new NetworkNodeBolt(s,true,3,0);
+        StatisticsGatherer s = new ClassicCMAStatistics();
+        NetworkNodeBolt bolt = new NetworkNodeBolt(s, new EmptyFirewallChecker(), 0, 1, 0);
         bolt.prepare(mockConf(), mockContext(), collector);
         // when the packet is processed
         bolt.execute(tcpTuple);
         // then the respective flagCount is incremented
+        ClassicCMAStatistics s1 = (ClassicCMAStatistics) s;
         for(int i=0; i<flags.length; i++){
             if (flags[i]) {
-                assertEquals(new Long(1), s.getFlagCount()[i]);
+                assertEquals(1, s1.getFlagCount()[i]);
             }
         }
     }

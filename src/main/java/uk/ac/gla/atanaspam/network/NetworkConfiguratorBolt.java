@@ -229,7 +229,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         //emitBulkConfig(lvl0, 20, false); (this is default)   // top level does not gather statistics
         emitBulkConfig(lvl0, 10, 3);        // top level perfroms no checks
         emitBulkConfig(lvl1, 10,5);
-        emitBulkConfig(lvl2, 20, true);
+        emitBulkConfig(lvl2, 20, 2);
         emitBulkConfig(lvl2, 10, 0);
         for(int port : blockedPorts)
             emitBulkConfig(all, 11, port);
@@ -238,7 +238,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         for(InetAddress ip : monitoredIP)
             emitBulkConfig(all, 15, ip);
         for(TCPFlags flags : badflags)
-            emitBulkConfig(all, 17, flags);emitBulkConfig(lvl2, 19, true);
+            emitBulkConfig(all, 17, flags);
+        //emitBulkConfig(lvl2, 19, true);
     }
 
 

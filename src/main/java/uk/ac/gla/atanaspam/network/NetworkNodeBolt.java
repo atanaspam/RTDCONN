@@ -9,11 +9,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.TupleUtils;
-import org.apache.storm.shade.org.apache.zookeeper.data.Stat;
-import uk.ac.gla.atanaspam.network.utils.HitCountKeeper;
-import uk.ac.gla.atanaspam.network.utils.NthLastModifiedTimeTracker;
-import uk.ac.gla.atanaspam.network.utils.SlidingWindowCounter;
-import uk.ac.gla.atanaspam.network.utils.StateKeeper;
+import uk.ac.gla.atanaspam.network.utils.*;
 
 import java.net.InetAddress;
 import java.util.HashMap;
@@ -22,7 +18,6 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.gla.atanaspam.pcapj.PacketContents;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
 
@@ -40,29 +35,20 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private static final Logger LOG = LoggerFactory.getLogger(NetworkNodeBolt.class);
 
     private OutputCollector collector;
-    int taskId;
+    private int taskId;
+    private GenericPacket packet;
+    private ChecksPerformer checks;
+    private StatisticsGatherer statistics;
 
-    private final SlidingWindowCounter<InetAddress> srcIpCounter;
-    private final SlidingWindowCounter<InetAddress> destIpCounter;
-    private final SlidingWindowCounter<Integer> destPortCounter;
-    private static final int NUM_WINDOW_CHUNKS = 2;
-    private static final int DEFAULT_SLIDING_WINDOW_IN_SECONDS = NUM_WINDOW_CHUNKS * 30;
-    private static final int DEFAULT_EMIT_FREQUENCY_IN_SECONDS = DEFAULT_SLIDING_WINDOW_IN_SECONDS / NUM_WINDOW_CHUNKS;
-    private static final String WINDOW_LENGTH_WARNING_TEMPLATE =
-            "Actual window length is %d seconds when it should be %d seconds"
-                    + " (you can safely ignore this warning during the startup phase)";
-    private final int windowLengthInSeconds;
-    private final int emitFrequencyInSeconds;
-    private NthLastModifiedTimeTracker lastModifiedTracker;
-    private StateKeeper state;
-    private HitCountKeeper hitCount;
-    GenericPacket packet;
+
+
+
     /**
      * Check verbosity indicates the level of checks to be performed
      * 0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags
      */
-    private int verbosity;
-    private boolean gatherStatistics;
+    private int checkVerbosity;
+    private int statisticsVerbosity;
     private boolean timeChecks;
     private int packetsProcessed;
     private int detectionRatio;
@@ -71,138 +57,50 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * Initializes a NetworkNodeBolt with a specific state
      * Used for testing.
      */
-    public NetworkNodeBolt(StateKeeper state, boolean gatherStatistics, int verbosity, int packetsProcessed){
-        this(DEFAULT_SLIDING_WINDOW_IN_SECONDS, DEFAULT_EMIT_FREQUENCY_IN_SECONDS);
-        this.state = state;
-        this.gatherStatistics = gatherStatistics;
-        this.verbosity = verbosity;
-        this.packetsProcessed = packetsProcessed;
+    public NetworkNodeBolt(StatisticsGatherer statistics, ChecksPerformer checks, int checkVerbosity,
+                           int statisticsVerbosity, int packetsProcessed){
+        this(checkVerbosity, statisticsVerbosity);
+        this.statistics = statistics;
+        this.checks = checks;
     }
 
     /**
      * Initializes a NetworkNodeBolt with default slidingWindow settings
      */
     public NetworkNodeBolt(){
-        this(DEFAULT_SLIDING_WINDOW_IN_SECONDS, DEFAULT_EMIT_FREQUENCY_IN_SECONDS);
+        this(1, 0);
     }
 
-    /**
-     * Initializes a NetworkNodeBolt with the specified slidingWindow settings
-     * @param windowLengthInSeconds length of the sliding window
-     * @param emitFrequencyInSeconds the frequency in which results are emitted
-     */
-    public NetworkNodeBolt(int windowLengthInSeconds, int emitFrequencyInSeconds){
-        packetsProcessed = 0;
-        verbosity = 3;
-        timeChecks = false;
-        gatherStatistics = false;
-        detectionRatio = 2000;
-        state = new StateKeeper();
-        hitCount = new HitCountKeeper();
 
-        this.windowLengthInSeconds = windowLengthInSeconds;
-        this.emitFrequencyInSeconds = emitFrequencyInSeconds;
-        srcIpCounter = new SlidingWindowCounter<InetAddress>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
-                this.emitFrequencyInSeconds));
-        destIpCounter = new SlidingWindowCounter<InetAddress>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
-                this.emitFrequencyInSeconds));
-        destPortCounter = new SlidingWindowCounter<Integer>(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
-                this.emitFrequencyInSeconds));
+    /**
+     * Initializes a NetworkNodeBolt with the specified verbosity settings
+     * @param checksVerbosity The verbosity of Firewall checks
+     * @param statisticsVerbosity The verbosity of Statistics gathering
+     */
+    public NetworkNodeBolt(int checksVerbosity, int statisticsVerbosity){
+        handleCheckVerbosityChange(checksVerbosity);
+        handleStatisticsVerbosityChange(statisticsVerbosity);
+
+        packetsProcessed = 0;
+        this.checkVerbosity = checksVerbosity;
+        this.statisticsVerbosity = statisticsVerbosity;
+        detectionRatio = 2000;
     }
 
     public void prepare( Map conf, TopologyContext context, OutputCollector collector ) {
         this.collector = collector;
-        timeChecks = (boolean) conf.get("timeCheck");
+//        timeChecks = (boolean) conf.get("timeCheck");
         taskId = context.getThisTaskId();
-        lastModifiedTracker = new NthLastModifiedTimeTracker(deriveNumWindowChunksFrom(this.windowLengthInSeconds,
-                this.emitFrequencyInSeconds));
-        LOG.debug("Initialized task " + taskId + " from " + taskId + " with verbosity " + verbosity);
-    }
-
-    /**
-     * Updates the data stored in the StateKeeper dataStructure and emits the data
-     * to the NetworkConfuguratorBolt
-     */
-    private void emitCurrentWindowCounts() {
-        if(timeChecks){
-            hitCount.set(state.getSrcIpHitCount(), state.getDestIpHitCount(), state.getPortHitCount(), state.getFlagCount());
-            state.setSrcIpHitCount(new HashMap<>(srcIpCounter.getCountsThenAdvanceWindow()));
-            state.setDestIpHitCount(new HashMap<>(destIpCounter.getCountsThenAdvanceWindow()));
-            state.setPortHitCount(new HashMap<>(destPortCounter.getCountsThenAdvanceWindow()));
-
-            int actualWindowLengthInSeconds = lastModifiedTracker.secondsSinceOldestModification();
-            lastModifiedTracker.markAsModified();
-            if (actualWindowLengthInSeconds != windowLengthInSeconds) {
-                LOG.warn(String.format(WINDOW_LENGTH_WARNING_TEMPLATE, actualWindowLengthInSeconds, windowLengthInSeconds));
-                return;
-            }
-        }
-        for(Map.Entry<InetAddress, Long> a : state.getSrcIpHitCount().entrySet()){
-            try {
-                //LOG.info("SRC IP "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if ((a.getValue() > (hitCount.getSrcIpHitCount().get(a.getKey()) * 2) && a.getValue() > detectionRatio) /*|| (a.getValue() > detectionRatio*2)*/) {
-                    report(3, a.getKey());
-                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
-                }
-            }catch (NullPointerException e){
-//                if (a.getValue() > detectionRatio){
-//                    report(3, a.getKey());
-//                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
-//                }
-            }
-        }
-        for(Map.Entry<InetAddress, Long> a : state.getDestIpHitCount().entrySet()){
-            try {
-                //LOG.info("DST IP "+ a.getKey() +" "+ a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if ((a.getValue() > (hitCount.getDestIpHitCount().get(a.getKey()) * 2) && a.getValue() > detectionRatio) /*|| (a.getValue() > detectionRatio*2)*/) {
-                    report(4, a.getKey());
-                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
-                }
-            }catch (NullPointerException e){
-//                if (a.getValue() > detectionRatio){
-//                    report(4, a.getKey());
-//                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
-//                }
-            }
-        }
-        for(Map.Entry<Integer, Long> a : state.getPortHitCount().entrySet()) {
-            try {
-                //LOG.info("PORT "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-                if ((a.getValue() > (hitCount.getPortHitCount().get(a.getKey()) * 2) && a.getValue() > detectionRatio) /*|| (a.getValue() > detectionRatio*2)*/){
-                    report(1, a.getKey());
-                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " port hits");
-                }
-            }catch (NullPointerException e){
-                if (a.getValue() > detectionRatio){
-                    report(1, a.getKey());
-                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " port hits");
-                }
-            }
-        }
-//
-//        if (state.getFlagCount()[4] > hitCount.getFlagCount()[4]) {
-//            report(7, 4);
-//            LOG.info("Reported flag 4 for" + state.getFlagCount()[4] + " hits");
-//        }
-//        if (state.getFlagCount()[5] > hitCount.getFlagCount()[5]) {
-//            report(7, 5);
-//            LOG.info("Reported flag 5 for " + state.getFlagCount()[4] + " hits");
-//        }
-
-        if (!timeChecks) {
-            //TODO derive statistics from state
-            //LOG.info("Before: " + hitCount.toString());
-            hitCount.set(state.getSrcIpHitCount(), state.getDestIpHitCount(), state.getPortHitCount(), state.getFlagCount());
-            //LOG.info("After: " + hitCount.toString());
-            state.resetCounts();
-        }
+        statistics.setTaskId(taskId);
+        statistics.setDetectionRatio(detectionRatio);
+        LOG.debug("Initialized task " + taskId + " from " + taskId + " with check verb " +
+                checkVerbosity + " and stat verb " + statisticsVerbosity);
     }
 
     public void execute( Tuple tuple ) {
         if (TupleUtils.isTick(tuple)) {
-            if (timeChecks) {
-                LOG.trace("Received tick tuple");
-                emitCurrentWindowCounts();
+            if (statisticsVerbosity == 2) {
+                statistics.emitCurrentWindowCounts(collector);
             }
             collector.ack(tuple);
         }else {
@@ -226,55 +124,60 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     switch (code) {
                         case 10: { // means push new check verbosity
                             int newVerb = (Integer) tuple.getValueByField("setting");
-                            verbosity = newVerb;
+                            checkVerbosity = newVerb;
+                            handleCheckVerbosityChange(newVerb);
                             LOG.debug(taskId + " Changed check-verbosity to " + newVerb); // for debugging
                             break;
                         }
                         case 11: { // means push new port to blacklist
                             int newPort = (Integer) tuple.getValueByField("setting");
-                            state.setBlockedPort(newPort, true);
+                            //TODO this only works with SrcPorts
+                            checks.addPort(newPort, 1);
                             LOG.debug(taskId + " Added port " + newPort + " to blacklist"); // for debugging
                             break;
                         }
                         case 12: { // means remove a port from blacklist
                             int newPort = (Integer) tuple.getValueByField("setting");
-                            state.setBlockedPort(newPort, false);
+                            //TODO this only works with SrcPorts
+                            checks.removePort(newPort, 1);
                             LOG.debug(taskId + " Removed port " + newPort + " from blacklist"); // for debugging
                             break;
                         }
                         case 13:{ // means add new IP to blacklist
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
-                            state.addBlockedIpAddr(newAddr);
+                            //TODO this only works with SrcIP
+                            checks.addIpAddress(newAddr, 1);
                             LOG.debug(taskId + " Added " + newAddr.getHostAddress() + " to blacklist"); // for debugging
                             break;
                         }
                         case 14: { // means remove IP from blacklist
                             InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
-                            state.removeBlockedIpAddr(newAddr);
+                            //TODO this only works with SrcIP
+                            checks.removeIpAddress(newAddr, 1);
                             LOG.debug(taskId + " Removed " + newAddr.getHostAddress() + " from blacklist"); // for debugging
                             break;
                         }
                         case 15:{ // means add new IP to monitored
-                            InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
-                            state.addMonitoredIpAddr(newAddr);
-                            LOG.debug(taskId + " Added " + newAddr.getHostAddress() + " to monitored"); // for debugging
-                            break;
+//                            InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
+//                            state.addMonitoredIpAddr(newAddr);
+//                            LOG.debug(taskId + " Added " + newAddr.getHostAddress() + " to monitored"); // for debugging
+//                            break;
                         }
                         case 16: { // means remove IP from monitored
-                            InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
-                            state.removeMonitoredIpAddr(newAddr);
-                            LOG.debug(taskId + " Removed " + newAddr.getHostAddress() + " from monitored"); // for debugging
-                            break;
+//                            InetAddress newAddr = (InetAddress) tuple.getValueByField("setting");
+//                            state.removeMonitoredIpAddr(newAddr);
+//                            LOG.debug(taskId + " Removed " + newAddr.getHostAddress() + " from monitored"); // for debugging
+//                            break;
                         }
                         case 17: { // add new flag to blocked
                             TCPFlags newFlags = new TCPFlags((boolean[]) tuple.getValueByField("setting"));
-                            state.addBlockedFlag(newFlags);
+                            checks.addFlag(newFlags, 1);
                             LOG.debug(taskId + " Added new flags to blocked"); // for debugging
                             break;
                         }
                         case 18: { // means remove flag from flags
                             TCPFlags newFlags = new TCPFlags((boolean[]) tuple.getValueByField("setting"));
-                            state.removeBlockedFlag(newFlags);
+                            checks.removeFlag(newFlags, 1);
                             LOG.debug(taskId + " Removed flags from blocked"); // for debugging
                             break;
                         }
@@ -283,17 +186,21 @@ public class NetworkNodeBolt extends BaseRichBolt {
                             LOG.debug(taskId + " Set timeChecks to " + timeChecks); // for debugging
                             break;
                         }
-                        case 20: { // set gatherStaistics value
-                            gatherStatistics = (boolean) tuple.getValueByField("setting");
-                            LOG.debug(taskId + " Set gatherStatistics to " + gatherStatistics); // for debugging
+                        case 20: { // set statisticsVerbosity value
+                            statisticsVerbosity = (int) tuple.getValueByField("setting");
+                            handleStatisticsVerbosityChange(statisticsVerbosity);
+                            LOG.debug(taskId + " Set statisticsVerbosity to " + statisticsVerbosity); // for debugging
                             break;
                         }
                         case 21: { //add packetContents to list of blocked packetContents
-                            state.addBlockedData(Pattern.compile((String) tuple.getValueByField("setting")));
+                            checks.addPattern(Pattern.compile((String) tuple.getValueByField("setting")), 1);
                             LOG.debug(taskId + " Added a new ApplicationLayer signature to blocked.");
                             break;
                         }
-                        //TODO add detectionRatio change command
+                        case 22: {
+                            statistics.setDetectionRatio((int) tuple.getValueByField("setting"));
+                            LOG.debug(taskId + " Changed detection ratio to :" + (int) tuple.getValueByField("setting"));
+                        }
 
                     }
                     /** we return here because otherwise the performChecks() method would be invoked on the config data => crash */
@@ -316,141 +223,34 @@ public class NetworkNodeBolt extends BaseRichBolt {
             /** Invoke performChecks() on each packet that is received
              * if performChecks returns true the packet is allowed to pass, else it is just dropped
              * */
-            if (performChecks(verbosity)) {
+            if (checks.performChecks(packet)) {
                 emitPacket(packet);
             } else {
                 report(8, packet.getSrc_ip());
             }
-            /** If gatherStatistics is true gather data about the traffic characteristics*/
-            if (gatherStatistics) {
-                /** Increment respective counts */
-                if (timeChecks) {
-                    srcIpCounter.incrementCount(packet.getSrc_ip());
-                    destIpCounter.incrementCount(packet.getDst_ip());
-                    destPortCounter.incrementCount(packet.getDst_port());
-                } else{
-                    state.incrementSrcIpHitCount(packet.getSrc_ip());
-                    state.incrementDestIpHitCount(packet.getDst_ip());
-                    state.incrementPortHitCount(packet.getDst_port());
-                    packetsProcessed++;
-                    /** report as soon as 6000 packets processed */
-                    if (packetsProcessed >= 10000){
-                        LOG.info(taskId + " processed 10000 packets.");
-                        emitCurrentWindowCounts();
-                        packetsProcessed = 0;
+            statistics.addSrcIpHit(packet.getSrc_ip(),1);
+            statistics.addDstIpHit(packet.getDst_ip(),1);
+            if( packet.getType().equals(GenericPacket.PacketType.UDP) || packet.getType().equals(GenericPacket.PacketType.TCP)) {
+                statistics.addSrcPortHit(packet.getSrc_port(), 1);
+                statistics.addDstPortHit(packet.getDst_port(), 1);
+                if (packet.getType().equals(GenericPacket.PacketType.TCP)){
+                    for(int i=0;i<packet.getFlags().toArray().length;i++) {
+                        if (packet.getFlags().toArray()[i]) {
+                            statistics.addFlagCount(i, 1);
+                        }
                     }
+                }
+            }
+            if (statisticsVerbosity == 1){
+                packetsProcessed++;
+                if (packetsProcessed == 10000){
+                    LOG.info("Processed 10000 packets");
+                    statistics.emitCurrentWindowCounts(collector);
+                    packetsProcessed = 0;
                 }
             }
             collector.ack(tuple);
             packet = null;
-        }
-    }
-
-    /**
-     * Performs checks upon a packet instance depending on the verbosity specified
-     * @param code an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
-     * @return true if all the checks succeed, false otherwise
-     */
-    private boolean performChecks(int code){
-        if (code == 0)
-            return true;
-        boolean status = true;
-
-        if (packet.getType().equals("TCP")){
-            if (code == 5) return checkApplicationLayer(packet.getData());
-            else {
-                if (code > 0) status = status & checkPort(packet.getDst_port());
-                //if (code >0)status = status & checkPort(packet.getSrc_port());
-                if (code > 1) status = status & checkSrcIP(packet.getSrc_ip());
-                if (code > 2) status = status & checkFlags(packet.getFlags());
-                if (code > 3) status = status & checkApplicationLayer(packet.getData());
-            }
-        }
-        else if (packet.getType().equals("UDP")){
-            if (code == 5) return checkApplicationLayer(packet.getData());
-            else {
-                if (code > 0) status = status & checkPort(packet.getDst_port());
-                //if (code >0)status = status & checkPort(packet.getDst_port());
-                if (code > 1) status = status & checkSrcIP(packet.getSrc_ip());
-                if (code > 3) status = status & checkApplicationLayer(packet.getData());
-            }
-        }
-        else if (packet.getType().equals("IPP")){
-            if (code >0)status = status & checkSrcIP(packet.getSrc_ip());
-        }
-        else return false;
-
-        return status;
-    }
-
-    /**
-     * Check a port number against the rules specified for the bolt
-     * @param port the port to be checked
-     * @return true if no problem is detected, false otherwise
-     */
-    private boolean checkPort(int port){
-        return !state.isBlockedPort(port);
-    }
-
-    /**
-     * Check an IP address against the rules specified for the bolt
-     * @param addr the IP address to be checked
-     * @return true if no problem is detected, false otherwise
-     */
-    private boolean checkSrcIP(InetAddress addr){
-        if (state.isBlockedIpAddr(addr))
-            return false;
-//        else if(state.isMonitoredIpAddr(addr)){
-//            report(4, addr);
-//        }
-        return true;
-
-    }
-
-    /**
-     * Check an IP address against the rules specified for the bolt
-     * @param addr the IP address to be checked
-     * @return true if no problem is detected, false otherwise
-     */
-    private boolean checkDstIP(InetAddress addr){
-        if (state.isBlockedIpAddr(addr))
-            return false;
-        return true;
-
-    }
-
-    /**
-     * Check a set of flags against the rules specified for the bolt
-     * @param flags the flags to be checked
-     * @return true if no problem is detected, false otherwise
-     */
-    private boolean checkFlags(TCPFlags flags){
-        if (state.isBadFlag(flags)) {
-            return false;
-        }
-        else {
-            if (gatherStatistics){
-                boolean[] a = flags.toArray();
-                for(int i=0; i<a.length; i++){
-                    if (a[i]) {
-                        state.incrementFlagCount(i);
-                    }
-                }
-            }
-            return true;
-        }
-    }
-
-    /**
-     * Check the actual contents of a packet for any anomalies
-     * The check is based on searching for signatures within the data field
-     * @return true if no problem is detected, false otherwise
-     */
-    private boolean checkApplicationLayer(PacketContents data){
-        if (packet.data == null)
-            return true;
-        else{
-            return !state.dataIsBlocked(data);
         }
     }
 
@@ -520,23 +320,61 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * @param packet the Generic Packet instance to be emitted
      */
     private void emitPacket(GenericPacket packet){
-        if(packet.getType().equals("TCP")){
+        if(packet.getType().equals(GenericPacket.PacketType.TCP)){
             collector.emit("TCPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
                     packet.getDst_port(), packet.getFlags().toArray(), packet.getData().getData()));
         }
-        else if(packet.getType().equals("UDP")){
+        else if(packet.getType().equals(GenericPacket.PacketType.UDP)){
             collector.emit("UDPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
                     packet.getDst_port(), packet.getData().getData()));
         }
-        else if(packet.getType().equals("IPP")){
+        else if(packet.getType().equals(GenericPacket.PacketType.IP)){
             collector.emit("IPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip()));
         }
         else {
             LOG.warn("Encountered an unknown packet type");
             return;
+        }
+    }
+
+    private void handleCheckVerbosityChange(int checkVerbosity){
+        switch (checkVerbosity){
+            case 0: {
+                this.checks = new EmptyFirewallChecker();
+                break;
+            }
+            case 1: {
+                this.checks = new BasicFirewallChecker();
+                break;
+            }
+            case 2: {
+                this.checks = new DPIFirewallChecker();
+                break;
+            }
+            case 3: {
+                this.checks = new FullFirewallChecker();
+                break;
+            }
+        }
+    }
+
+    private void handleStatisticsVerbosityChange(int statisticsVerbosity){
+        switch (statisticsVerbosity){
+            case 0: {
+                statistics = new EmptyStatisticsGatherer();
+                break;
+            }
+            case 1: {
+                statistics = new ClassicCMAStatistics();
+                break;
+            }
+            case 2: {
+                statistics = new SlidingWindowCMAStatistics();
+                break;
+            }
         }
     }
 
@@ -547,10 +385,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
     @Override
     public Map<String,Object> getComponentConfiguration(){
         Map<String, Object> m = new HashMap<String, Object>();
-        m.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, emitFrequencyInSeconds);
+        m.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, StatisticsGatherer.DEFAULT_EMIT_FREQUENCY_IN_SECONDS);
         m.put("ID", taskId);
-        m.put("Verbosity", verbosity);
-        m.put("Statistics", gatherStatistics);
+        m.put("CheckVerbosity", checkVerbosity);
+        m.put("StatisticVerbosity", statisticsVerbosity);
         m.put("TimeChecks", timeChecks);
         return m;
     }

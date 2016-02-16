@@ -11,9 +11,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.gla.atanaspam.network.utils.HitCountPair;
-import uk.ac.gla.atanaspam.network.utils.InetAddressSerializer;
-import uk.ac.gla.atanaspam.network.utils.StateKeeper;
+import uk.ac.gla.atanaspam.network.utils.*;
 
 import java.net.InetAddress;
 import java.net.Inet4Address;
@@ -102,6 +100,14 @@ public class NetworkTopology {
         conf.registerSerialization(InetAddress.class, InetAddressSerializer.class);
         conf.registerSerialization(Inet4Address.class);
         conf.registerSerialization(HitCountPair.class);
+        conf.registerSerialization(HitCountKeeper.class);
+//        conf.registerSerialization(BasicFirewallChecker.class);
+//        conf.registerSerialization(ClassicCMAStatistics.class);
+//        conf.registerSerialization(DPIFirewallChecker.class);
+//        conf.registerSerialization(EmptyFirewallChecker.class);
+//        conf.registerSerialization(EmptyStatisticsGatherer.class);
+//        conf.registerSerialization(FullFirewallChecker.class);
+//        conf.registerSerialization(SlidingWindowCMAStatistics.class);
         conf.registerSerialization(boolean[].class);
         conf.setFallBackOnJavaSerialization(false);
         conf.put("timeCheck", false);
