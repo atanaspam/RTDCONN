@@ -67,21 +67,21 @@ public class NetworkTopology {
 
         builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(1,0), NUM_LVL0_BOLTS )                      // we have 2 low level Bolts
                 .allGrouping("Controller", "Configure")                                 // each one receives everything from the configurator
-                .fieldsGrouping("emitter_bolt", "IPPackets", new Fields("destIP"))             // packets from the emitter are grouped by the destIP
-                .fieldsGrouping("emitter_bolt", "TCPPackets", new Fields("destIP"))
-                .fieldsGrouping("emitter_bolt", "UDPPackets", new Fields("destIP"));
+                .fieldsGrouping("emitter_bolt", "IPPackets", new Fields("destMAC"))             // packets from the emitter are grouped by the destIP
+                .fieldsGrouping("emitter_bolt", "TCPPackets", new Fields("destMAC"))
+                .fieldsGrouping("emitter_bolt", "UDPPackets", new Fields("destMAC"));
 
         builder.setBolt("node_0_lvl_1", new NetworkNodeBolt(2,0), NUM_LVL1_BOLTS)                       // we have 3 mid level bolts
                 .allGrouping("Controller", "Configure")
-                .fieldsGrouping("node_0_lvl_0", "IPPackets", new Fields("destIP"))      // packets from the emitter are grouped by the destIP
-                .fieldsGrouping("node_0_lvl_0", "TCPPackets", new Fields("destIP"))
-                .fieldsGrouping("node_0_lvl_0", "UDPPackets", new Fields("destIP"));    // they receive approved packets from the low level bolts
+                .fieldsGrouping("node_0_lvl_0", "IPPackets", new Fields("destMAC"))      // packets from the emitter are grouped by the destIP
+                .fieldsGrouping("node_0_lvl_0", "TCPPackets", new Fields("destMAC"))
+                .fieldsGrouping("node_0_lvl_0", "UDPPackets", new Fields("destMAC"));    // they receive approved packets from the low level bolts
 
         builder.setBolt("node_0_lvl_2", new NetworkNodeBolt(0,1), NUM_LVL2_BOLTS)                       // we have 8 high level bolts
                 .allGrouping("Controller", "Configure")
-                .fieldsGrouping("node_0_lvl_1", "IPPackets", new Fields("destIP"))      // packets from the emitter are grouped by the destIP
-                .fieldsGrouping("node_0_lvl_1", "TCPPackets", new Fields("destIP"))
-                .fieldsGrouping("node_0_lvl_1", "UDPPackets", new Fields("destIP"));    // they receive approved packets from the mid level bolts
+                .fieldsGrouping("node_0_lvl_1", "IPPackets", new Fields("destMAC"))      // packets from the emitter are grouped by the destIP
+                .fieldsGrouping("node_0_lvl_1", "TCPPackets", new Fields("destMAC"))
+                .fieldsGrouping("node_0_lvl_1", "UDPPackets", new Fields("destMAC"));    // they receive approved packets from the mid level bolts
 
         builder.setBolt("Controller", new NetworkConfiguratorBolt(), NUM_CONTROLLERS)                 // we have 1 controller bolt
                 .allGrouping("node_0_lvl_0", "Reporting")                               // it receives all the reporting streams from
@@ -101,13 +101,13 @@ public class NetworkTopology {
         conf.registerSerialization(Inet4Address.class);
         conf.registerSerialization(HitCountPair.class);
         conf.registerSerialization(HitCountKeeper.class);
-        conf.registerSerialization(BasicFirewallChecker.class);
-        conf.registerSerialization(ClassicCMAStatistics.class);
-        conf.registerSerialization(DPIFirewallChecker.class);
-        conf.registerSerialization(EmptyFirewallChecker.class);
-        conf.registerSerialization(EmptyStatisticsGatherer.class);
-        conf.registerSerialization(FullFirewallChecker.class);
-        conf.registerSerialization(SlidingWindowCMAStatistics.class);
+//        conf.registerSerialization(BasicFirewallChecker.class);
+//        conf.registerSerialization(ClassicCMAStatistics.class);
+//        conf.registerSerialization(DPIFirewallChecker.class);
+//        conf.registerSerialization(EmptyFirewallChecker.class);
+//        conf.registerSerialization(EmptyStatisticsGatherer.class);
+//        conf.registerSerialization(FullFirewallChecker.class);
+//        conf.registerSerialization(SlidingWindowCMAStatistics.class);
         conf.registerSerialization(boolean[].class);
         conf.setFallBackOnJavaSerialization(false);
         conf.put("timeCheck", false);
