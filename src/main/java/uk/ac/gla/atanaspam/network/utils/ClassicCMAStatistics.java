@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.network.StatisticsGatherer;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +16,7 @@ import java.util.Map;
  * @version 0.1
  * @created 16/02/2016
  */
-public class ClassicCMAStatistics implements StatisticsGatherer {
+public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
 
     private HashMap<InetAddress, Integer> srcIpHitCount;
     private HashMap<InetAddress, Integer> dstIpHitCount;

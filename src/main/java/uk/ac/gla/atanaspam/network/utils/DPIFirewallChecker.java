@@ -5,6 +5,7 @@ import uk.ac.gla.atanaspam.network.GenericPacket;
 import uk.ac.gla.atanaspam.pcapj.PacketContents;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -15,7 +16,7 @@ import java.util.regex.Pattern;
  * @version 0.1
  * @created 16/02/2016
  */
-public class DPIFirewallChecker implements ChecksPerformer{
+public class DPIFirewallChecker implements ChecksPerformer, Serializable{
 
     private ArrayList<Pattern> blockedData;
 

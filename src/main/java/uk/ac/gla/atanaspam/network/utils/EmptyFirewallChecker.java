@@ -4,6 +4,7 @@ import uk.ac.gla.atanaspam.network.ChecksPerformer;
 import uk.ac.gla.atanaspam.network.GenericPacket;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.regex.Pattern;
 
@@ -12,7 +13,7 @@ import java.util.regex.Pattern;
  * @version 0.1
  * @created 16/02/2016
  */
-public class EmptyFirewallChecker implements ChecksPerformer {
+public class EmptyFirewallChecker implements ChecksPerformer, Serializable {
 
 
     @Override
