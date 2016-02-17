@@ -12,16 +12,16 @@ import java.util.Arrays;
  * @version 0.1
  * @created 09/02/2016
  */
-public class CMAPair implements KryoSerializable{
+public class CMA implements KryoSerializable{
 
     int cumulativeMovingAverage;
     int numberOfDatumPoints;
 
-    public CMAPair(int cumulativeMovingAverage, int numberOfDatumPoints) {
+    public CMA(int cumulativeMovingAverage, int numberOfDatumPoints) {
         this.cumulativeMovingAverage = cumulativeMovingAverage;
         this.numberOfDatumPoints = numberOfDatumPoints;
     }
-    public CMAPair(){
+    public CMA(){
         this.cumulativeMovingAverage = 0;
         this.numberOfDatumPoints = 0;
     }
@@ -68,19 +68,19 @@ public class CMAPair implements KryoSerializable{
 }
 
 
-//public class CMAPair implements KryoSerializable{
+//public class CMA implements KryoSerializable{
 //
 //    int cumulativeMovingAverage;
 //    int[] oldValues;
 //    int index;
 //
-//    public CMAPair(int value, int numberOfDatumPoints) {
+//    public CMA(int value, int numberOfDatumPoints) {
 //        index = 0;
 //        this.oldValues = new int[10];
 //        oldValues[index++] = value;
 //        this.cumulativeMovingAverage = value;
 //    }
-//    public CMAPair(){
+//    public CMA(){
 //        index =0;
 //        this.cumulativeMovingAverage = 0;
 //        this.oldValues = new int[10];

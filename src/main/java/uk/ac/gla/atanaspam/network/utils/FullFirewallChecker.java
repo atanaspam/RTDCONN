@@ -38,33 +38,33 @@ public class FullFirewallChecker implements ChecksPerformer, Serializable{
     }
 
     /**
-     * Performs checks upon a packet instance depending on the verbosity specified
-     * @param code an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
+     * Performs checks upon a packet instance depending on the verbosity specified.
+     * @param packet the packet to be checked.
      * @return true if all the checks succeed, false otherwise
      */
     @Override
     public boolean performChecks(GenericPacket packet) {
         boolean status = true;
         if (packet.getType().equals(GenericPacket.PacketType.TCP)){
-            status = status & checkSrcPort(packet.getSrc_port());
-            status = status & checkDstPort(packet.getDst_port());
-            status = status & checkSrcIP(packet.getSrc_ip());
-            status = status & checkDstIP(packet.getDst_ip());
-            status = status & checkFlags(packet.getFlags());
-            status = status & checkApplicationLayer(packet.getData());
+            status = status && checkSrcPort(packet.getSrc_port());
+            status = status && checkDstPort(packet.getDst_port());
+            status = status && checkSrcIP(packet.getSrc_ip());
+            status = status && checkDstIP(packet.getDst_ip());
+            status = status && checkFlags(packet.getFlags());
+            status = status && checkApplicationLayer(packet.getData());
 
         }
         else if (packet.getType().equals(GenericPacket.PacketType.UDP)){
-            status = status & checkSrcPort(packet.getSrc_port());
-            status = status & checkDstPort(packet.getDst_port());
-            status = status & checkSrcIP(packet.getSrc_ip());
-            status = status & checkDstIP(packet.getDst_ip());
-            status = status & checkApplicationLayer(packet.getData());
+            status = status && checkSrcPort(packet.getSrc_port());
+            status = status && checkDstPort(packet.getDst_port());
+            status = status && checkSrcIP(packet.getSrc_ip());
+            status = status && checkDstIP(packet.getDst_ip());
+            status = status && checkApplicationLayer(packet.getData());
 
         }
         else if (packet.getType().equals(GenericPacket.PacketType.IP)){
-            status = status & checkSrcIP(packet.getSrc_ip());
-            status = status & checkDstIP(packet.getDst_ip());
+            status = status && checkSrcIP(packet.getSrc_ip());
+            status = status && checkDstIP(packet.getDst_ip());
         }
         else return false;
 

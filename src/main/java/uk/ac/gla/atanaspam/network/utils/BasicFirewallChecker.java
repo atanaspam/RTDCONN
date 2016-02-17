@@ -42,21 +42,21 @@ public class BasicFirewallChecker implements ChecksPerformer, Serializable{
         boolean status = true;
 
         if (packet.getType().equals(GenericPacket.PacketType.TCP)){
-            status = status & checkSrcPort(packet.getSrc_port());
-            status = status & checkDstPort(packet.getDst_port());
-            status = status & checkSrcIP(packet.getSrc_ip());
-            status = status & checkDstIP(packet.getDst_ip());
-            status = status & checkFlags(packet.getFlags());
+            status = status && checkSrcPort(packet.getSrc_port());
+            status = status && checkDstPort(packet.getDst_port());
+            status = status && checkSrcIP(packet.getSrc_ip());
+            status = status && checkDstIP(packet.getDst_ip());
+            status = status && checkFlags(packet.getFlags());
         }
         else if (packet.getType().equals(GenericPacket.PacketType.UDP)){
-            status = status & checkSrcPort(packet.getSrc_port());
-            status = status & checkDstPort(packet.getDst_port());
-            status = status & checkSrcIP(packet.getSrc_ip());
-            status = status & checkDstIP(packet.getDst_ip());
+            status = status && checkSrcPort(packet.getSrc_port());
+            status = status && checkDstPort(packet.getDst_port());
+            status = status && checkSrcIP(packet.getSrc_ip());
+            status = status && checkDstIP(packet.getDst_ip());
         }
         else if (packet.getType().equals(GenericPacket.PacketType.IP)){
-            status = status & checkSrcIP(packet.getSrc_ip());
-            status = status & checkDstIP(packet.getDst_ip());
+            status = status && checkSrcIP(packet.getSrc_ip());
+            status = status && checkDstIP(packet.getDst_ip());
         }
         else return false;
 

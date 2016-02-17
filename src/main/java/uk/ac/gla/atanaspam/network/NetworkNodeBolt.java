@@ -39,10 +39,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private GenericPacket packet;
     private ChecksPerformer checks;
     private StatisticsGatherer statistics;
-
-
-
-
     /**
      * Check verbosity indicates the level of checks to be performed
      * 0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags
@@ -87,6 +83,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         detectionRatio = 2000;
     }
 
+    @Override
     public void prepare( Map conf, TopologyContext context, OutputCollector collector ) {
         this.collector = collector;
 //        timeChecks = (boolean) conf.get("timeCheck");
@@ -97,6 +94,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 checkVerbosity + " and stat verb " + statisticsVerbosity);
     }
 
+    @Override
     public void execute( Tuple tuple ) {
         if (TupleUtils.isTick(tuple)) {
             if (statisticsVerbosity == 2) {
@@ -308,6 +306,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         return null;
     }
 
+    @Override
     public void declareOutputFields( OutputFieldsDeclarer declarer ) {
         declarer.declareStream("Reporting", new Fields("taskId", "anomalyType", "anomalyData"));
         declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
@@ -376,10 +375,6 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 break;
             }
         }
-    }
-
-    private int deriveNumWindowChunksFrom(int windowLengthInSeconds, int windowUpdateFrequencyInSeconds) {
-        return windowLengthInSeconds / windowUpdateFrequencyInSeconds;
     }
 
     @Override

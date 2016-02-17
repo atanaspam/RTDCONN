@@ -13,17 +13,14 @@ import java.net.InetAddress;
  * @version 0.1
  * @created 01/11/2015
  */
-public class GenericPacket extends IPPacket implements Serializable{
+public class GenericPacket extends IPPacket {
 
-    private static final long serialVersionUID = 1;
+    //private static final long serialVersionUID = 1;
 
-    //TODO use enums for packet types.
     PacketType type;
     protected int src_port;
     protected int dst_port;
-
     protected TCPFlags flags;
-
     protected PacketContents data;
 
     public int getSrc_port() {
@@ -140,6 +137,7 @@ public class GenericPacket extends IPPacket implements Serializable{
      * Returns a string representation of a Generic Packet depending on the actual packet type
      * @return The String representation
      */
+    @Override
     public String toString(){
         if (type.equals(PacketType.IP)){
             return String.format(

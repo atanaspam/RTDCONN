@@ -87,87 +87,92 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     }
 
     public void execute( Tuple tuple ) {
-        if(TupleUtils.isTick(tuple)){
-            LOG.info(state.toString());
-            if (round == 4){
+        try {
+            if (TupleUtils.isTick(tuple)) {
+//                LOG.info(state.toString());
+                round++;
+                LOG.info("Round: " + round);
+                if (round == 10) {
 //                LOG.info("Changing anomaly...");
 //                emitBulkConfig(spouts,30, 1);
 //                emitBulkConfig(spouts,31, 40);
-//                round++;
-            }else{
-                LOG.info("Round: "+ round);
-                round++;
+                    LOG.error("NUMBER OF PACKETS DROPPED : " + state.getNumberOfPacketsDropped());
+                    emitBulkConfig(spouts, 32, 1);
+                    round++;
+                }
+                //TODO emit config according to current stats
+                collector.ack(tuple);
+            } else {
+                /** obtain the message from a bolt */
+                int srcTaskId = (int) tuple.getValueByField("taskId");
+                int anomalyType = (int) tuple.getValueByField("anomalyType");
+                /** we check for all known error codes */
+                switch (anomalyType) {
+                    case 1: {   // 1 means lots of hits to a single port
+                        Integer port = (Integer) tuple.getValueByField("anomalyData");
+                        if (state.addPortHit(port, srcTaskId, round)) {
+                            //TODO here we handle blocking or restructuring
+                            LOG.info("Lots of hits to " + port);
+                        }
+                        break;
+                    }
+                    case 2: {    /* 2 means hits to an unexpected port */
+                        int port = (Integer) tuple.getValueByField("anomalyData");
+                        if (state.addUnexpPortHit(port, srcTaskId, round)) {
+                            //TODO here we handle blocking or restructuring
+                            LOG.info("Unexpected hit to" + port);
+                        }
+                        break;
+                    }
+                    case 3: {    /* 3 means lots of hits to the same src IP */
+                        InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
+                        if (state.addIpHit(ip, srcTaskId, round)) {
+                            //TODO here we handle blocking or restructuring
+                            LOG.info("Lots of hits to srcIP:  " + ip);
+                        }
+                        break;
+                    }
+                    case 4: {    /* 4 means lots of hits to the same dest IP */
+                        InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
+                        if (state.addIpHit(ip, srcTaskId, round)) {
+                            //TODO here we handle blocking or restructuring
+                            LOG.info("Lots of hits to dstIP:  " + ip);
+                        }
+                        break;
+                    }
+                    case 5: {    /* 5 means hits to an unexpected IP */
+                        InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
+                        if (state.addUnexpIpHit(ip, srcTaskId, round)) {
+                            //TODO here we handle blocking or restructuring
+                            LOG.info("Unexpected hit to:  " + ip);
+                        }
+                        break;
+                    }
+                    case 6: {    /* 6 means a dropped packet */
+                        InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
+                        if (state.addDroppedPacket(ip, srcTaskId, round)) {
+                            //TODO here we handle blocking or restructuring
+                            state.incrementDroppedPacket();
+                            //LOG.info("Dropped: " + ip);
+                        }
+                        break;
+                    }
+                    case 7: { /* anomalious flag trafic */
+                        int flagNum = (Integer) tuple.getValueByField("anomalyData");
+                        if (state.addBadFlagHit(flagNum, srcTaskId, round)) {
+                            //TODO here we handle blocking or restructuring
+                            LOG.info("Anomalous flag detected...");
+                            //TODO this seems to be unused....
+                        }
+                    }
+                    case 8: { /* Other */
+                        //TODO implement more
+                    }
+                }
+                collector.ack(tuple);
             }
-            //TODO emit config according to current stats
-            collector.ack(tuple);
-        }
-        else {
-            /** obtain the message from a bolt */
-            int srcTasktId = (int) tuple.getValueByField("taskId");
-            int anomalyType = (int) tuple.getValueByField("anomalyType");
-            /** we check for all known error codes */
-            switch (anomalyType) {
-                case 1: {   // 1 means lots of hits to a single port
-                    Integer port = (Integer) tuple.getValueByField("anomalyData");
-                    if( state.addPortHit(port, srcTasktId, round)){
-                        //TODO here we handle blocking or restructuring
-                        LOG.info("Lots of hits to " + port);
-                    }
-                    break;
-                }
-                case 2: {    /* 2 means hits to an unexpected port */
-                    int port = (Integer) tuple.getValueByField("anomalyData");
-                    if( state.addUnexpPortHit(port, srcTasktId, round)){
-                        //TODO here we handle blocking or restructuring
-                        LOG.info("Unexpected hit to" + port);
-                    }
-                    break;
-                }
-                case 3: {    /* 3 means lots of hits to the same src IP */
-                    InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                    if(state.addIpHit(ip, srcTasktId, round)){
-                        //TODO here we handle blocking or restructuring
-                        LOG.info("Lots of hits to srcIP:  " + ip);
-                    }
-                    break;
-                }
-                case 4: {    /* 4 means lots of hits to the same dest IP */
-                    InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                    if(state.addIpHit(ip, srcTasktId, round)){
-                        //TODO here we handle blocking or restructuring
-                        LOG.info("Lots of hits to dstIP:  " + ip);
-                    }
-                    break;
-                }
-                case 5: {    /* 5 means hits to an unexpected IP */
-                    InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                    if(state.addUnexpIpHit(ip, srcTasktId, round)){
-                        //TODO here we handle blocking or restructuring
-                        LOG.info("Unexpected hit to:  " + ip);
-                    }
-                    break;
-                }
-                case 6: {    /* 6 means a dropped packet */
-                    InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                    if(state.addDroppedPacket(ip, srcTasktId, round)){
-                        //TODO here we handle blocking or restructuring
-                        LOG.info("Dropped: " + ip);
-                    }
-                    break;
-                }
-                case 7: { /* anomalious flag trafic */
-                    int flagNum = (Integer) tuple.getValueByField("anomalyData");
-                    if(state.addBadFlagHit(flagNum, srcTasktId, round)){
-                        //TODO here we handle blocking or restructuring
-                        LOG.info("Anomalous flag detected...");
-                        //TODO this seems to be unused....
-                    }
-                }
-                case 8: { /* Other */
-                    //TODO implement more
-                }
-            }
-            collector.ack(tuple);
+        }catch (Exception e){
+            collector.reportError(e);
         }
     }
 
@@ -229,7 +234,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         //emitBulkConfig(lvl0, 20, false); (this is default)   // top level does not gather statistics
         emitBulkConfig(lvl0, 10, 3);        // top level perfroms no checks
         emitBulkConfig(lvl1, 10,5);
-        emitBulkConfig(lvl2, 20, 2);
+        emitBulkConfig(lvl2, 20, 0);
         emitBulkConfig(lvl2, 10, 0);
         for(int port : blockedPorts)
             emitBulkConfig(all, 11, port);

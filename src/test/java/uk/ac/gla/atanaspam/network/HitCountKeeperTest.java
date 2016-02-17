@@ -30,15 +30,22 @@ public class HitCountKeeperTest {
         }
         int j=0;
         int result = 0;
-        k.addSrcIpHitCount(a, 10);
+        //k.addSrcIpHitCount(a, 10);
         Random r = new Random();
-        for (int i=1; i<11; i++){
+        for (int i=0; i<10; i++){
             j=r.nextInt(9999)+1;
-            result = (j + (i*k.getSrcIpCMA(a)))/i+1;
+            if (i ==0) {
+                result = j;
+            }else {
+                result = (j + (i * result)) / (i + 1);
+            }
             k.addSrcIpHitCount(a, j);
+            //System.out.println(j + " --- " + k.getSrcIpCMA(a) + " -- " + result);
         }
+        assertEquals(result, k.getSrcIpCMA(a));
     }
 
+    //TODO fix this to use Last10CMA instead of HitCountKeeper
 //    @Test
 //    public void shouldCalculateLast10CMA() {
 //        HitCountKeeper k = new HitCountKeeper();

@@ -17,9 +17,9 @@ public class HitCountKeeper implements Serializable{
     //TODO change serializer
     public double detectionRatio = 1.5;
 
-    private HashMap<InetAddress, CMAPair> srcIpHitCount;
-    private HashMap<InetAddress, CMAPair> destIpHitCount;
-    private HashMap<Integer, CMAPair> portHitCount;
+    private HashMap<InetAddress, CMA> srcIpHitCount;
+    private HashMap<InetAddress, CMA> destIpHitCount;
+    private HashMap<Integer, CMA> portHitCount;
     private Long[] flagCount;
 
     public HitCountKeeper(){
@@ -31,8 +31,8 @@ public class HitCountKeeper implements Serializable{
             flagCount[i] = new Long(0);
     }
 
-    public void set(HashMap<InetAddress, CMAPair> newSrcIpHitCount, HashMap<InetAddress, CMAPair> newDestIpHitCount,
-                    HashMap<Integer, CMAPair> newPortHitCount, Long[] newFlagCount){
+    public void set(HashMap<InetAddress, CMA> newSrcIpHitCount, HashMap<InetAddress, CMA> newDestIpHitCount,
+                    HashMap<Integer, CMA> newPortHitCount, Long[] newFlagCount){
         srcIpHitCount = new HashMap<>(newSrcIpHitCount);
         destIpHitCount = new HashMap<>(newDestIpHitCount);
         portHitCount = new HashMap<>(newPortHitCount);
@@ -58,20 +58,20 @@ public class HitCountKeeper implements Serializable{
 
     /**
      * Add a new value to the CMA entry for this address. If it does not exist create it.
-     * @see CMAPair
+     * @see CMA
      * @param addr The address data is added for
      * @param value The new value to be added.
      * @return true if the value to add is larger than the current CMA before the update
      */
     public boolean addSrcIpHitCount(InetAddress addr, int value){
-        CMAPair a = srcIpHitCount.get(addr);
+        CMA a = srcIpHitCount.get(addr);
         boolean result = false;
         if(a != null){
             result = value > (a.getCumulativeMovingAverage() * detectionRatio);
             a.addValue(value);
             srcIpHitCount.put(addr, a);
         } else{
-            srcIpHitCount.put(addr, new CMAPair(value, 1));
+            srcIpHitCount.put(addr, new CMA(value, 1));
         }
         return result;
     }
@@ -85,7 +85,7 @@ public class HitCountKeeper implements Serializable{
         return srcIpHitCount.get(addr).getCumulativeMovingAverage();
     }
 
-    public HashMap<InetAddress, CMAPair> getSrcIpHitCount() {
+    public HashMap<InetAddress, CMA> getSrcIpHitCount() {
         return srcIpHitCount;
     }
 
@@ -95,20 +95,20 @@ public class HitCountKeeper implements Serializable{
 
     /**
      * Add a new value to the CMA entry for this address. If it does not exist create it.
-     * @see CMAPair
+     * @see CMA
      * @param addr The address data is added for
      * @param value The new value to be added.
      * @return true if the value to add is larger than the current CMA before the update
      */
     public boolean addDesIpHitCount(InetAddress addr, int value){
-        CMAPair a = destIpHitCount.get(addr);
+        CMA a = destIpHitCount.get(addr);
         boolean result = false;
         if(a != null){
             result = value > (a.getCumulativeMovingAverage() * detectionRatio);
             a.addValue(value);
             destIpHitCount.put(addr, a);
         } else{
-            destIpHitCount.put(addr, new CMAPair(value, 1));
+            destIpHitCount.put(addr, new CMA(value, 1));
         }
         return result;
     }
@@ -122,7 +122,7 @@ public class HitCountKeeper implements Serializable{
         return destIpHitCount.get(addr).cumulativeMovingAverage;
     }
 
-    public HashMap<InetAddress, CMAPair> getDestIpHitCount() {
+    public HashMap<InetAddress, CMA> getDestIpHitCount() {
         return destIpHitCount;
     }
 
@@ -133,25 +133,25 @@ public class HitCountKeeper implements Serializable{
 
     /**
      * Add a new value to the CMA entry for this port. If it does not exist create it.
-     * @see CMAPair
+     * @see CMA
      * @param port The port data is added for.
      * @param value The new value to be added.
      * @return true if the value to add is larger than the current CMA before the update
      */
     public boolean addPortHitCount(int port, int value) {
-        CMAPair a = portHitCount.get(port);
+        CMA a = portHitCount.get(port);
         boolean result = false;
         if (a != null) {
             result = value > (a.getCumulativeMovingAverage() * detectionRatio);
             a.addValue(value);
             portHitCount.put(port, a);
         } else {
-            portHitCount.put(port, new CMAPair());
+            portHitCount.put(port, new CMA());
         }
         return result;
     }
 
-    public HashMap<Integer, CMAPair> getPortHitCount() {
+    public HashMap<Integer, CMA> getPortHitCount() {
         return portHitCount;
     }
 

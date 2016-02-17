@@ -112,7 +112,6 @@ public class NetworkTopology {
         conf.setFallBackOnJavaSerialization(false);
         conf.put("timeCheck", false);
         conf.put("boltNum", NUM_BOLTS);
-        LOG.info("NUM OF BOLTS :"+NUM_BOLTS);
         conf.put("filePath", filePath);
 
         if (mode.equals("remote")) {

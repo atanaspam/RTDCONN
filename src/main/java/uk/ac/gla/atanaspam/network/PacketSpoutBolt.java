@@ -45,34 +45,43 @@ public class PacketSpoutBolt extends BaseRichBolt {
 
     @Override
     public void execute(Tuple tuple) {
-        if ("Configure".equals(tuple.getSourceStreamId())) {
-            int dest = (Integer) tuple.getValueByField("taskId");
-            /** obtain the address and check if you are the intended recipient of the message */
-            if (dest != taskId) {
+        try {
+            if ("Configure".equals(tuple.getSourceStreamId())) {
+                int dest = (Integer) tuple.getValueByField("taskId");
+                /** obtain the address and check if you are the intended recipient of the message */
+                if (dest != taskId) {
+                    collector.ack(tuple);
+                    return;
+                }
+                int code = (Integer) tuple.getValueByField("code");
+                switch (code) {
+                    case 30: {
+                        int anomaly = (Integer) tuple.getValueByField("setting");
+                        LOG.info("Changing anomaly to " + anomaly);
+                        p.configure(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), anomaly);
+                        break;
+                    }
+                    case 31: {
+                        int anomaly = (Integer) tuple.getValueByField("setting");
+                        LOG.info("Changing anomaly percentage to " + anomaly);
+                        p.setAnomalousTrafficPercentage(anomaly);
+                        break;
+                    }
+                    case 32: {
+                        LOG.info("NUMBER OF ANOMALOUS PACKETS: " + p.getAnomalousPacketsEmitted());
+                        break;
+                    }
+                }
+                //TODO configure packetGenerator
                 collector.ack(tuple);
-                return;
+            } else {
+                BasicPacket packet = p.getPacket();
+                emitPacket(packet);
+                packet = null;
+                collector.ack(tuple);
             }
-            int code = (Integer) tuple.getValueByField("code");
-            switch (code) {
-                case 30:{
-                    int anomaly = (Integer) tuple.getValueByField("setting");
-                    LOG.info("Changing anomaly to "+ anomaly);
-                    p.configure(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),anomaly);
-                }
-                case 31:{
-                    int anomaly = (Integer) tuple.getValueByField("setting");
-                    LOG.info("Changing anomaly percentage to "+ anomaly);
-                    p.setAnomalousTrafficPercentage(anomaly);
-                }
-            }
-            //TODO configure packetGenerator
-            collector.ack(tuple);
-        }else {
-            //backtype.storm.utils.Utils.sleep(3);
-            BasicPacket packet = p.getPacket();
-            emitPacket(packet);
-            packet = null;
-            collector.ack(tuple);
+        }catch (Exception e){
+            collector.reportError(e);
         }
     }
 
