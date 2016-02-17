@@ -108,6 +108,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 int srcTaskId = (int) tuple.getValueByField("taskId");
                 int anomalyType = (int) tuple.getValueByField("anomalyType");
                 /** we check for all known error codes */
+                //LOG.info(srcTaskId + " " +  anomalyType + "");
                 switch (anomalyType) {
                     case 1: {   // 1 means lots of hits to a single port
                         Integer port = (Integer) tuple.getValueByField("anomalyData");

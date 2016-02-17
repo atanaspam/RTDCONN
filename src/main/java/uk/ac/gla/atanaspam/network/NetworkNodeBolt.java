@@ -224,6 +224,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
             if (checks.performChecks(packet)) {
                 emitPacket(packet);
             } else {
+                //LOG.info(packet.getSrc_ip() + "");
                 report(6, packet.getSrc_ip());
             }
             statistics.addSrcIpHit(packet.getSrc_ip(),1);

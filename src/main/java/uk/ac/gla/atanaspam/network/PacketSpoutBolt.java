@@ -40,7 +40,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
         p = new PacketGenerator(filePath, true, false);
         p.configure(new ArrayList<InetAddress>(), new ArrayList<InetAddress>(), new ArrayList<Integer>(),
                 new ArrayList<Integer>(), new ArrayList<>(),1);
-        p.setAnomalousTrafficPercentage(10);
+        p.setAnomalousTrafficPercentage(2);
     }
 
     @Override
