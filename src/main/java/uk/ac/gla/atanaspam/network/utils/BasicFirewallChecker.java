@@ -34,27 +34,27 @@ public class BasicFirewallChecker implements ChecksPerformer, Serializable{
 
     /**
      * Performs checks upon a packet instance depending on the verbosity specified
-     * @param code an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
+     * @param packet CHANGEME an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
      * @return true if all the checks succeed, false otherwise
      */
     @Override
     public boolean performChecks(GenericPacket packet) {
         boolean status = true;
 
-        if (packet.getType().equals(GenericPacket.PacketType.TCP)){
+        if (packet.getType() == 2){
             status = status && checkSrcPort(packet.getSrc_port());
             status = status && checkDstPort(packet.getDst_port());
             status = status && checkSrcIP(packet.getSrc_ip());
             status = status && checkDstIP(packet.getDst_ip());
             status = status && checkFlags(packet.getFlags());
         }
-        else if (packet.getType().equals(GenericPacket.PacketType.UDP)){
+        else if (packet.getType() == 3){
             status = status && checkSrcPort(packet.getSrc_port());
             status = status && checkDstPort(packet.getDst_port());
             status = status && checkSrcIP(packet.getSrc_ip());
             status = status && checkDstIP(packet.getDst_ip());
         }
-        else if (packet.getType().equals(GenericPacket.PacketType.IP)){
+        else if (packet.getType() == 1){
             status = status && checkSrcIP(packet.getSrc_ip());
             status = status && checkDstIP(packet.getDst_ip());
         }

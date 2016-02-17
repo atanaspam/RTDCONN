@@ -45,7 +45,7 @@ public class FullFirewallChecker implements ChecksPerformer, Serializable{
     @Override
     public boolean performChecks(GenericPacket packet) {
         boolean status = true;
-        if (packet.getType().equals(GenericPacket.PacketType.TCP)){
+        if (packet.getType() == 2){
             status = status && checkSrcPort(packet.getSrc_port());
             status = status && checkDstPort(packet.getDst_port());
             status = status && checkSrcIP(packet.getSrc_ip());
@@ -54,7 +54,7 @@ public class FullFirewallChecker implements ChecksPerformer, Serializable{
             status = status && checkApplicationLayer(packet.getData());
 
         }
-        else if (packet.getType().equals(GenericPacket.PacketType.UDP)){
+        else if (packet.getType() == 3){
             status = status && checkSrcPort(packet.getSrc_port());
             status = status && checkDstPort(packet.getDst_port());
             status = status && checkSrcIP(packet.getSrc_ip());
@@ -62,7 +62,7 @@ public class FullFirewallChecker implements ChecksPerformer, Serializable{
             status = status && checkApplicationLayer(packet.getData());
 
         }
-        else if (packet.getType().equals(GenericPacket.PacketType.IP)){
+        else if (packet.getType() == 1){
             status = status && checkSrcIP(packet.getSrc_ip());
             status = status && checkDstIP(packet.getDst_ip());
         }

@@ -32,10 +32,10 @@ public class DPIFirewallChecker implements ChecksPerformer, Serializable{
     @Override
     public boolean performChecks(GenericPacket packet) {
 
-        if (packet.getType().equals(GenericPacket.PacketType.TCP)){
+        if (packet.getType() == 2){
             return checkApplicationLayer(packet.getData());
         }
-        else if (packet.getType().equals(GenericPacket.PacketType.UDP)){
+        else if (packet.getType() == 3){
             return checkApplicationLayer(packet.getData());
         }
         else return false;

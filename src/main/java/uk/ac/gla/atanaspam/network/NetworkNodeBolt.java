@@ -228,10 +228,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
             }
             statistics.addSrcIpHit(packet.getSrc_ip(),1);
             statistics.addDstIpHit(packet.getDst_ip(),1);
-            if( packet.getType().equals(GenericPacket.PacketType.UDP) || packet.getType().equals(GenericPacket.PacketType.TCP)) {
+            if( packet.getType() == 3 || packet.getType() == 2) {
                 statistics.addSrcPortHit(packet.getSrc_port(), 1);
                 statistics.addDstPortHit(packet.getDst_port(), 1);
-                if (packet.getType().equals(GenericPacket.PacketType.TCP)){
+                if (packet.getType() == 2){
                     for(int i=0;i<packet.getFlags().toArray().length;i++) {
                         if (packet.getFlags().toArray()[i]) {
                             statistics.addFlagCount(i, 1);
@@ -319,17 +319,17 @@ public class NetworkNodeBolt extends BaseRichBolt {
      * @param packet the Generic Packet instance to be emitted
      */
     private void emitPacket(GenericPacket packet){
-        if(packet.getType().equals(GenericPacket.PacketType.TCP)){
+        if(packet.getType() == 2){
             collector.emit("TCPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
                     packet.getDst_port(), packet.getFlags().toArray(), packet.getData().getData()));
         }
-        else if(packet.getType().equals(GenericPacket.PacketType.UDP)){
+        else if(packet.getType() == 3){
             collector.emit("UDPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip(), packet.getSrc_port(),
                     packet.getDst_port(), packet.getData().getData()));
         }
-        else if(packet.getType().equals(GenericPacket.PacketType.IP)){
+        else if(packet.getType() == 1){
             collector.emit("IPPackets", new Values(packet.getTimestamp(), packet.getSourceMacAddress(),
                     packet.getDestMacAddress(), packet.getSrc_ip(), packet.getDst_ip()));
         }

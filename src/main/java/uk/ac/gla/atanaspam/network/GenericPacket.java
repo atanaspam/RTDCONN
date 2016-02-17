@@ -17,7 +17,7 @@ public class GenericPacket extends IPPacket {
 
     //private static final long serialVersionUID = 1;
 
-    PacketType type;
+    int type;
     protected int src_port;
     protected int dst_port;
     protected TCPFlags flags;
@@ -39,7 +39,7 @@ public class GenericPacket extends IPPacket {
         return data;
     }
 
-    public PacketType getType(){return type; }
+    public int getType(){return type; }
 
 
 
@@ -55,7 +55,7 @@ public class GenericPacket extends IPPacket {
     public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP) {
 
         super(timestamp, srcMAC, destMAC, srcIP, dstIP);
-        this.type = PacketType.IP;
+        this.type = 1;
 
     }
 
@@ -78,7 +78,7 @@ public class GenericPacket extends IPPacket {
         this.dst_port = dst_port;
         this.flags = flags;
         this.data = new PacketContents(data);
-        this.type = PacketType.TCP;
+        this.type = 2;
 
     }
 
@@ -90,7 +90,7 @@ public class GenericPacket extends IPPacket {
         this.dst_port = dst_port;
         this.flags = flags;
         this.data = data;
-        this.type = PacketType.TCP;
+        this.type = 2;
 
     }
 
@@ -110,7 +110,7 @@ public class GenericPacket extends IPPacket {
         super(timestamp, srcMAC, destMAC, srcIP, dstIP);
         this.src_port = src_port;
         this.dst_port = dst_port;
-        this.type = PacketType.UDP;
+        this.type = 3;
     }
 
     public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP,
@@ -120,7 +120,7 @@ public class GenericPacket extends IPPacket {
         this.src_port = src_port;
         this.dst_port = dst_port;
         this.data = data;
-        this.type = PacketType.UDP;
+        this.type = 3;
     }
 
     public GenericPacket(long timestamp, String srcMAC, String destMAC, InetAddress srcIP, InetAddress dstIP,
@@ -129,7 +129,7 @@ public class GenericPacket extends IPPacket {
         this.src_port = src_port;
         this.dst_port = dst_port;
         this.data = new PacketContents(data);
-        this.type = PacketType.UDP;
+        this.type = 3;
 
     }
 
@@ -139,20 +139,20 @@ public class GenericPacket extends IPPacket {
      */
     @Override
     public String toString(){
-        if (type.equals(PacketType.IP)){
+        if (type==1){
             return String.format(
                     "-----PACKET-----%nTimeStamp: %d%nSRC MAC: %s%nDST MAC: %s%nSRC IP: %s%nDEST IP: %s%n",
                     this.timestamp/1000, this.sourceMacAddress, this.destMacAddress, this.src_ip.getHostAddress(),
                     this.dst_ip.getHostAddress());
         }
-        else if (type.equals(PacketType.UDP)){
+        else if (type==3){
             return String.format(
                     "-----UDP PACKET-----%nTimeStamp: %d%nSRC MAC: %s%nDST MAC: %s%nSRC IP: %s%nDEST IP: %s%nSRC PORT: %d%n" +
                             "DEST PORT: %d%n",
                     this.timestamp/1000, this.sourceMacAddress, this.destMacAddress, this.src_ip.getHostAddress(),
                     this.dst_ip.getHostAddress(), this.src_port, this.dst_port);
         }
-        else if (type.equals(PacketType.TCP)){
+        else if (type==2){
             return String.format(
                     "-----TCP PACKET-----%nTimeStamp: %d%nSRC MAC: %s%nDST MAC: %s%nSRC IP: %s%nDEST IP: %s%nSRC PORT: %d%n" +
                             "DEST PORT: %d%nFLAGS: %s%n",
