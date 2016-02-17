@@ -65,19 +65,19 @@ public class NetworkTopology {
                 .shuffleGrouping("spout", "trigger")
                 ;//.setNumTasks(8);
 
-        builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(), NUM_LVL0_BOLTS )                      // we have 2 low level Bolts
+        builder.setBolt("node_0_lvl_0", new NetworkNodeBolt(1,0), NUM_LVL0_BOLTS )                      // we have 2 low level Bolts
                 .allGrouping("Controller", "Configure")                                 // each one receives everything from the configurator
                 .fieldsGrouping("emitter_bolt", "IPPackets", new Fields("destIP"))             // packets from the emitter are grouped by the destIP
                 .fieldsGrouping("emitter_bolt", "TCPPackets", new Fields("destIP"))
                 .fieldsGrouping("emitter_bolt", "UDPPackets", new Fields("destIP"));
 
-        builder.setBolt("node_0_lvl_1", new NetworkNodeBolt(), NUM_LVL1_BOLTS)                       // we have 3 mid level bolts
+        builder.setBolt("node_0_lvl_1", new NetworkNodeBolt(2,0), NUM_LVL1_BOLTS)                       // we have 3 mid level bolts
                 .allGrouping("Controller", "Configure")
                 .fieldsGrouping("node_0_lvl_0", "IPPackets", new Fields("destIP"))      // packets from the emitter are grouped by the destIP
                 .fieldsGrouping("node_0_lvl_0", "TCPPackets", new Fields("destIP"))
                 .fieldsGrouping("node_0_lvl_0", "UDPPackets", new Fields("destIP"));    // they receive approved packets from the low level bolts
 
-        builder.setBolt("node_0_lvl_2", new NetworkNodeBolt(), NUM_LVL2_BOLTS)                       // we have 8 high level bolts
+        builder.setBolt("node_0_lvl_2", new NetworkNodeBolt(0,1), NUM_LVL2_BOLTS)                       // we have 8 high level bolts
                 .allGrouping("Controller", "Configure")
                 .fieldsGrouping("node_0_lvl_1", "IPPackets", new Fields("destIP"))      // packets from the emitter are grouped by the destIP
                 .fieldsGrouping("node_0_lvl_1", "TCPPackets", new Fields("destIP"))

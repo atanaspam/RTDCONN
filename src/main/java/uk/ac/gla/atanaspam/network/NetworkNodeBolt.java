@@ -90,7 +90,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         taskId = context.getThisTaskId();
         statistics.setTaskId(taskId);
         statistics.setDetectionRatio(detectionRatio);
-        LOG.debug("Initialized task " + taskId + " from " + taskId + " with check verb " +
+        LOG.info("Initialized task " + taskId + " from " + taskId + " with check verb " +
                 checkVerbosity + " and stat verb " + statisticsVerbosity);
     }
 
@@ -122,8 +122,8 @@ public class NetworkNodeBolt extends BaseRichBolt {
                     switch (code) {
                         case 10: { // means push new check verbosity
                             int newVerb = (Integer) tuple.getValueByField("setting");
-                            checkVerbosity = newVerb;
-                            handleCheckVerbosityChange(newVerb);
+                            this.checkVerbosity = newVerb;
+                            handleCheckVerbosityChange(checkVerbosity);
                             LOG.debug(taskId + " Changed check-verbosity to " + newVerb); // for debugging
                             break;
                         }
@@ -185,7 +185,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                             break;
                         }
                         case 20: { // set statisticsVerbosity value
-                            statisticsVerbosity = (int) tuple.getValueByField("setting");
+                            this.statisticsVerbosity = (int) tuple.getValueByField("setting");
                             handleStatisticsVerbosityChange(statisticsVerbosity);
                             LOG.debug(taskId + " Set statisticsVerbosity to " + statisticsVerbosity); // for debugging
                             break;
@@ -363,15 +363,15 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private void handleStatisticsVerbosityChange(int statisticsVerbosity){
         switch (statisticsVerbosity){
             case 0: {
-                statistics = new EmptyStatisticsGatherer();
+                this.statistics = new EmptyStatisticsGatherer();
                 break;
             }
             case 1: {
-                statistics = new ClassicCMAStatistics();
+                this.statistics = new ClassicCMAStatistics();
                 break;
             }
             case 2: {
-                statistics = new SlidingWindowCMAStatistics();
+                this.statistics = new SlidingWindowCMAStatistics();
                 break;
             }
         }
