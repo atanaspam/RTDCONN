@@ -101,6 +101,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     round++;
                 }
                 //TODO emit config according to current stats
+                //TODO change Integer to int
                 collector.ack(tuple);
             } else {
                 /** obtain the message from a bolt */
@@ -165,7 +166,9 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                             //TODO this seems to be unused....
                         }
                     }
-                    case 8: { /* Other */
+                    case 8: { /* Receive numberOfAnomalousPackets */
+                        long number = (long) tuple.getValueByField("anomalyData");
+                        LOG.warn(srcTaskId + "REPORTED " + number + "ANOMALOUS PACKETS...");
                         //TODO implement more
                     }
                 }
@@ -226,7 +229,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         ArrayList<InetAddress> monitoredIP = new ArrayList<>();
         ArrayList<Pattern> blockedData = new ArrayList<>();
         try {
-            //blockedIP .add(InetAddress.getByName("192.168.1.2"));
+            blockedIP .add(InetAddress.getByName("192.168.1.1"));
             //monitoredIP.add(InetAddress.getByName("192.168.1.2"));
         }catch (Exception e){}
         TCPFlags[] badflags = {};

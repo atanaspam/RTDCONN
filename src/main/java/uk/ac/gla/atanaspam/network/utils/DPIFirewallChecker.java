@@ -26,19 +26,18 @@ public class DPIFirewallChecker implements ChecksPerformer, Serializable{
 
     /**
      * Performs checks upon a packet instance depending on the verbosity specified
-     * @param code an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
+     * @param packet an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
      * @return true if all the checks succeed, false otherwise
      */
     @Override
     public boolean performChecks(GenericPacket packet) {
-
         if (packet.getType() == 2){
             return checkApplicationLayer(packet.getData());
         }
         else if (packet.getType() == 3){
             return checkApplicationLayer(packet.getData());
         }
-        else return false;
+        else return true;
     }
 
     @Override

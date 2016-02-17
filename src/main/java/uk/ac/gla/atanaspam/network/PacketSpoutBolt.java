@@ -40,7 +40,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
         p = new PacketGenerator(filePath, true, false);
         p.configure(new ArrayList<InetAddress>(), new ArrayList<InetAddress>(), new ArrayList<Integer>(),
                 new ArrayList<Integer>(), new ArrayList<>(),1);
-        p.setAnomalousTrafficPercentage(1);
+        p.setAnomalousTrafficPercentage(10);
     }
 
     @Override
@@ -69,6 +69,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
                     }
                     case 32: {
                         LOG.info("NUMBER OF ANOMALOUS PACKETS: " + p.getAnomalousPacketsEmitted());
+                        report(8, p.getAnomalousPacketsEmitted());
                         break;
                     }
                 }
@@ -83,6 +84,15 @@ public class PacketSpoutBolt extends BaseRichBolt {
         }catch (Exception e){
             collector.reportError(e);
         }
+    }
+
+    /**
+     * Report an event to the Configurator bolt.
+     * @param type the code representing the event type
+     * @param descr the value for the event if applicable
+     */
+    private void report(int type, Object descr){
+        collector.emit("Reporting", new Values(taskId, type, descr));
     }
 
     @Override
