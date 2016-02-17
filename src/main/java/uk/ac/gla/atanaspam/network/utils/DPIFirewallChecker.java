@@ -1,5 +1,7 @@
 package uk.ac.gla.atanaspam.network.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.network.ChecksPerformer;
 import uk.ac.gla.atanaspam.network.GenericPacket;
 import uk.ac.gla.atanaspam.pcapj.PacketContents;
@@ -18,6 +20,7 @@ import java.util.regex.Pattern;
  */
 public class DPIFirewallChecker implements ChecksPerformer, Serializable{
 
+    //private static final Logger LOG = LoggerFactory.getLogger(DPIFirewallChecker.class);
     private ArrayList<Pattern> blockedData;
 
     public DPIFirewallChecker() {
@@ -92,7 +95,8 @@ public class DPIFirewallChecker implements ChecksPerformer, Serializable{
         else{
             for (Pattern p : blockedData){
                 Matcher m = p.matcher(new String(data.getData()));
-                if (m.find()) {return false;}
+                if (m.matches()) {
+                    return false;}
             }
             return true;
         }

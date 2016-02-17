@@ -1,5 +1,7 @@
 package uk.ac.gla.atanaspam.network.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.network.ChecksPerformer;
 import uk.ac.gla.atanaspam.network.GenericPacket;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
@@ -17,7 +19,7 @@ import java.util.regex.Pattern;
  */
 public class BasicFirewallChecker implements ChecksPerformer, Serializable{
 
-
+    //private static final Logger LOG = LoggerFactory.getLogger(BasicFirewallChecker.class);
     private BitSet blockedSrcPorts;
     private BitSet blockedDstPorts;
     private HashSet<InetAddress> blockedSrcIpAddr;
@@ -40,27 +42,29 @@ public class BasicFirewallChecker implements ChecksPerformer, Serializable{
     @Override
     public boolean performChecks(GenericPacket packet) {
         boolean status = true;
-
         if (packet.getType() == 2){
             status = status && checkSrcPort(packet.getSrc_port());
             status = status && checkDstPort(packet.getDst_port());
             status = status && checkSrcIP(packet.getSrc_ip());
             status = status && checkDstIP(packet.getDst_ip());
             status = status && checkFlags(packet.getFlags());
+            return status;
         }
         else if (packet.getType() == 3){
             status = status && checkSrcPort(packet.getSrc_port());
             status = status && checkDstPort(packet.getDst_port());
             status = status && checkSrcIP(packet.getSrc_ip());
             status = status && checkDstIP(packet.getDst_ip());
+            return status;
         }
         else if (packet.getType() == 1){
             status = status && checkSrcIP(packet.getSrc_ip());
             status = status && checkDstIP(packet.getDst_ip());
+            return status;
         }
-        else return false;
-
-        return status;
+        else{
+            return true;
+        }
     }
 
     @Override

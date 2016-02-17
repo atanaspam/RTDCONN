@@ -186,7 +186,7 @@ public class FullFirewallChecker implements ChecksPerformer, Serializable{
         else{
             for (Pattern p : blockedData){
                 Matcher m = p.matcher(new String(data.getData()));
-                if (m.find()) {return false;}
+                if (m.matches()) {return false;}
             }
             return true;
         }

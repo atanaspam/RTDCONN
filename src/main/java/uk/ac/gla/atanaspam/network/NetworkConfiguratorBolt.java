@@ -154,7 +154,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                         if (state.addDroppedPacket(ip, srcTaskId, round)) {
                             //TODO here we handle blocking or restructuring
                             state.incrementDroppedPacket();
-                            //LOG.info("Dropped: " + ip);
+                            LOG.info("Dropped: " + ip);
                         }
                         break;
                     }
@@ -235,7 +235,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         TCPFlags[] badflags = {};
 
         //emitBulkConfig(lvl0, 20, false); (this is default)   // top level does not gather statistics
-        emitBulkConfig(lvl0, 10, 3);        // top level perfroms no checks
+        emitBulkConfig(lvl0, 10, 1);        // top level perfroms no checks
         emitBulkConfig(lvl1, 10, 2);
         emitBulkConfig(lvl2, 20, 1);
         emitBulkConfig(lvl2, 10, 0);
