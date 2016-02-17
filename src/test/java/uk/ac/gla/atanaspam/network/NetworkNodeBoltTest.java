@@ -1,26 +1,21 @@
 package uk.ac.gla.atanaspam.network;
 
 import backtype.storm.Config;
-import backtype.storm.scheduler.Cluster;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-import backtype.storm.Constants;
 import static org.mockito.Mockito.*;
 import static org.testng.AssertJUnit.assertEquals;
 import static uk.ac.gla.atanaspam.network.utils.MockTupleHelpers.*;
 
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import sun.nio.ch.Net;
 import uk.ac.gla.atanaspam.network.utils.*;
 import uk.ac.gla.atanaspam.pcapj.*;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Map;
 
 /**
