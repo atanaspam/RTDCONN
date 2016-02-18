@@ -108,7 +108,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
 //                LOG.info(state.toString());
                 round++;
                 LOG.info("Round: " + round);
-                if (round == 5) {
+                if (round == 10) {
 //                LOG.info("Changing anomaly...");
 //                emitBulkConfig(spouts,30, 1);
 //                emitBulkConfig(spouts,31, 40);
