@@ -117,6 +117,7 @@ public class NetworkTopology {
         conf.put("boltNum", NUM_BOLTS);
         conf.put("filePath", filePath);
         conf.put("mode", mode);
+        conf.put("emitLimit", true);
         if (mode.equals("remote")) {
             conf.setNumWorkers(NUM_BOLTS + 1);
             conf.setNumAckers(NUM_BOLTS+ 1);

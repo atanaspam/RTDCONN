@@ -5,9 +5,7 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.MessageId;
 import backtype.storm.tuple.Values;
-import backtype.storm.utils.Utils;
 
 import java.util.Map;
 import java.util.UUID;
@@ -25,11 +23,13 @@ public class PacketSpout extends BaseRichSpout {
     private SpoutOutputCollector collector;
     private UUID msgId;
     private long packets;
+    private boolean emitLimit;
 
     @Override
     public void open( Map conf, TopologyContext context, SpoutOutputCollector collector ) {
         this.collector = collector;
         packets = 0;
+        emitLimit = (boolean) conf.get("emitLimit");
     }
 
     @Override
@@ -38,7 +38,11 @@ public class PacketSpout extends BaseRichSpout {
             msgId = UUID.randomUUID();
             collector.emit("trigger", new Values(), msgId);
         }else {
-            backtype.storm.utils.Utils.sleep(500);
+            if (!emitLimit){
+               packets = 0;
+            }else {
+                backtype.storm.utils.Utils.sleep(500);
+            }
         }
         packets++;
     }
