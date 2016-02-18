@@ -34,7 +34,7 @@ public class PacketSpout extends BaseRichSpout {
 
     @Override
     public void nextTuple() {
-        if (packets < 2250000){
+        if (packets < 22500000){
             msgId = UUID.randomUUID();
             collector.emit("trigger", new Values(), msgId);
         }else {
