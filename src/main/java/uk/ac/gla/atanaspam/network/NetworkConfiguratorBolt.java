@@ -45,7 +45,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     ArrayList<Integer> lvl1;
     ArrayList<Integer> lvl2;
     ArrayList<Integer> all;
-
+    boolean isRemote;
     int n;
 
     /**
@@ -93,7 +93,13 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         all.addAll(lvl1);
         all.addAll(lvl2);
         initialConfig();
-        writeToFile("------  "+context.getStormId()+ " ------");
+        String mode = (String) conf.get("mode");
+        if (mode != null) {
+            if (conf.get("mode").equals("remote")) {
+                isRemote = true;
+                writeToFile("------  " + context.getStormId() + " ------");
+            }
+        }
     }
 
     public void execute( Tuple tuple ) {
@@ -268,7 +274,9 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     }
     public void writeToFile(String textToWrite){
         try {
-            Files.write(Paths.get("/users/level4/2031647p/Desktop/eval-results.txt"), (textToWrite+"\n").getBytes(), StandardOpenOption.APPEND);
+            if (isRemote) {
+                Files.write(Paths.get("/users/level4/2031647p/Desktop/eval-results.txt"), (textToWrite + "\n").getBytes(), StandardOpenOption.APPEND);
+            }
         }catch (IOException e) {
             LOG.error("UNABLE TO WRITE TO FILE");
         }

@@ -113,7 +113,7 @@ public class NetworkTopology {
         conf.put("timeCheck", false);
         conf.put("boltNum", NUM_BOLTS);
         conf.put("filePath", filePath);
-
+        conf.put("mode", mode);
         if (mode.equals("remote")) {
             conf.setNumWorkers(NUM_BOLTS + 1);
             conf.setNumAckers(NUM_BOLTS+ 1);

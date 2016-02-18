@@ -126,7 +126,7 @@ public class NetworkConfiguratorBoltTest {
         // when the report is processed
         bolt.execute(reportingTuple);
         // then the report should be stored in the state under task 2
-        assertEquals(1, bolt.state.getDroppedPacket(ip)[2].getHitCount());
+        assertEquals((double) 1, bolt.state.getNumberOfPacketsDropped());
     }
 
     @Test
