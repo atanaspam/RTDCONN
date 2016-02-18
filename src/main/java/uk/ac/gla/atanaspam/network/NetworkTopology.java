@@ -98,7 +98,7 @@ public class NetworkTopology {
 
         Config conf = new Config();
         conf.registerSerialization(InetAddress.class, InetAddressSerializer.class);
-        conf.registerSerialization(Inet4Address.class);
+        conf.registerSerialization(Inet4Address.class, Inet4AddressSerializer.class);
         conf.registerSerialization(HitCountPair.class);
         conf.registerSerialization(HitCountKeeper.class);
 //        conf.registerSerialization(BasicFirewallChecker.class);
