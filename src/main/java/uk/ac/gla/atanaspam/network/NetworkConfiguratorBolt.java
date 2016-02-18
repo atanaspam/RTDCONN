@@ -260,7 +260,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         TCPFlags[] badflags = {};
 
         //emitBulkConfig(lvl0, 20, false); (this is default)   // top level does not gather statistics
-        emitBulkConfig(lvl0, 10, 1);        // top level perfroms no checks
+        emitBulkConfig(lvl0, 10, 1);        // top level performs no checks
         emitBulkConfig(lvl1, 10, 2);
         emitBulkConfig(lvl2, 20, 1);
         emitBulkConfig(lvl2, 10, 0);
@@ -277,7 +277,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     public void writeToFile(String textToWrite){
         try {
             BufferedWriter out = new BufferedWriter
-                    (new FileWriter("/users/level4/2031647p/Desktop/eval-results.txt"));
+                    (new FileWriter("/users/level4/2031647p/Desktop/eval-results.txt",true));
             out.write(textToWrite + "\n");
             out.close();
         }

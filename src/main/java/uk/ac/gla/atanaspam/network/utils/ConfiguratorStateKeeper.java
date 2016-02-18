@@ -55,7 +55,7 @@ public class ConfiguratorStateKeeper implements Serializable {
 
     private ArrayList<HashMap<Object, HitCountPair[]>> data;
     private int numOfBolts;
-    private double numberOfPacketsDropped;
+    private long numberOfPacketsDropped;
 
     public ConfiguratorStateKeeper(int numOfBolts){
         numberOfPacketsDropped = 0;
@@ -168,7 +168,7 @@ public class ConfiguratorStateKeeper implements Serializable {
         this.numberOfPacketsDropped++;
     }
 
-    public double getNumberOfPacketsDropped() {
+    public long getNumberOfPacketsDropped() {
         return numberOfPacketsDropped;
     }
 

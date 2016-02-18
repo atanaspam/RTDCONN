@@ -24,17 +24,23 @@ public class PacketSpout extends BaseRichSpout {
 
     private SpoutOutputCollector collector;
     private UUID msgId;
+    private long packets;
 
     @Override
     public void open( Map conf, TopologyContext context, SpoutOutputCollector collector ) {
         this.collector = collector;
+        packets = 0;
     }
 
     @Override
     public void nextTuple() {
-        msgId = UUID.randomUUID();
-        collector.emit("trigger", new Values(), msgId);
-
+        if (packets < 2250000){
+            msgId = UUID.randomUUID();
+            collector.emit("trigger", new Values(), msgId);
+        }else {
+            backtype.storm.utils.Utils.sleep(500);
+        }
+        packets++;
     }
 
     @Override

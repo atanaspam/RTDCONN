@@ -94,7 +94,7 @@ public class NetworkTopology {
                 .shuffleGrouping("node_0_lvl_2", "IPPackets")
                 .shuffleGrouping("node_0_lvl_2", "TCPPackets")
                 .shuffleGrouping("node_0_lvl_2", "UDPPackets")
-                .allGrouping("emitter_bolt", "Configure");
+                .allGrouping("Controller", "Configure");
 
         /***                End of Topology Configuration                   ***/
 
