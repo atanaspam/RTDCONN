@@ -86,12 +86,15 @@ public class NetworkTopology {
         builder.setBolt("Controller", new NetworkConfiguratorBolt(), NUM_CONTROLLERS)                 // we have 1 controller bolt
                 .allGrouping("node_0_lvl_0", "Reporting")                               // it receives all the reporting streams from
                 .allGrouping("node_0_lvl_1", "Reporting")
-                .allGrouping("node_0_lvl_2", "Reporting");                              // the high and low level bolts
+                .allGrouping("node_0_lvl_2", "Reporting")
+                .allGrouping("Aggregator", "Reporting")
+                .allGrouping("emitter_bolt", "Reporting");                              // the high and low level bolts
 
         builder.setBolt("Aggregator", new NetworkAggregatorBolt(), NUM_AGGREGATORS)
                 .shuffleGrouping("node_0_lvl_2", "IPPackets")
                 .shuffleGrouping("node_0_lvl_2", "TCPPackets")
-                .shuffleGrouping("node_0_lvl_2", "UDPPackets");
+                .shuffleGrouping("node_0_lvl_2", "UDPPackets")
+                .allGrouping("emitter_bolt", "Configure");
 
         /***                End of Topology Configuration                   ***/
 

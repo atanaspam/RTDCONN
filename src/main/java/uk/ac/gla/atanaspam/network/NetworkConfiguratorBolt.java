@@ -282,7 +282,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             out.close();
         }
         catch (IOException e) {
-            LOG.error("UNABLE TO WRITE TO FILE");
+            LOG.error("UNABLE TO WRITE TO FILE " + e);
         }
     }
 
