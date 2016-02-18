@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.network.utils.ConfiguratorStateKeeper;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Files;
@@ -191,7 +193,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                         }
                         writeToFile(srcTaskId + "REPORTED " + number + "ANOMALOUS PACKETS...");
                         n++;
-//                        LOG.warn(srcTaskId + "REPORTED " + number + "ANOMALOUS PACKETS...");
+                        LOG.warn(srcTaskId + "REPORTED " + number + "ANOMALOUS PACKETS...");
                         break;
                     }
                 }
@@ -274,10 +276,12 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     }
     public void writeToFile(String textToWrite){
         try {
-            if (isRemote) {
-                Files.write(Paths.get("/users/level4/2031647p/Desktop/eval-results.txt"), (textToWrite + "\n").getBytes(), StandardOpenOption.APPEND);
-            }
-        }catch (IOException e) {
+            BufferedWriter out = new BufferedWriter
+                    (new FileWriter("/users/level4/2031647p/Desktop/eval-results.txt"));
+            out.write(textToWrite + "\n");
+            out.close();
+        }
+        catch (IOException e) {
             LOG.error("UNABLE TO WRITE TO FILE");
         }
     }
