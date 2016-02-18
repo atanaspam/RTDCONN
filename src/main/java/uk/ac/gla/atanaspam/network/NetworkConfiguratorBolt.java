@@ -14,7 +14,11 @@ import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.network.utils.ConfiguratorStateKeeper;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +46,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     ArrayList<Integer> lvl2;
     ArrayList<Integer> all;
 
+    int n;
+
     /**
      * Prepares the configurator bolt by initializing all the appropriate fields and obtaining
      * awareness over the rest of the topology.
@@ -58,6 +64,9 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
         lvl2 = new ArrayList<>();
+
+        //TODO This is temporary
+        n = 0;
 
         Map<Integer, String> map = context.getTaskToComponent();
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
@@ -84,6 +93,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         all.addAll(lvl1);
         all.addAll(lvl2);
         initialConfig();
+        writeToFile("------  "+context.getStormId()+ " ------");
     }
 
     public void execute( Tuple tuple ) {
@@ -92,11 +102,11 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
 //                LOG.info(state.toString());
                 round++;
                 LOG.info("Round: " + round);
-                if (round == 10) {
+                if (round == 5) {
 //                LOG.info("Changing anomaly...");
 //                emitBulkConfig(spouts,30, 1);
 //                emitBulkConfig(spouts,31, 40);
-                    LOG.error("NUMBER OF PACKETS DROPPED : " + state.getNumberOfPacketsDropped());
+                    LOG.error("NUMBER OF PACKETS Detected : " + state.getNumberOfPacketsDropped());
                     emitBulkConfig(spouts, 32, 1);
                     round++;
                 }
@@ -152,11 +162,12 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     }
                     case 6: {    /* 6 means a dropped packet */
                         InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                        if (state.addDroppedPacket(ip, srcTaskId, round)) {
-                            //TODO here we handle blocking or restructuring
-                            state.incrementDroppedPacket();
-                            LOG.info("Dropped: " + ip);
-                        }
+//                        if (state.addDroppedPacket(ip, srcTaskId, round)) {
+//                            //TODO here we handle blocking or restructuring
+//                            state.incrementDroppedPacket();
+//                            //LOG.info("Dropped: " + ip);
+//                        }
+                        state.incrementDroppedPacket();
                         break;
                     }
                     case 7: { /* anomalious flag trafic */
@@ -168,9 +179,14 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                         }
                     }
                     case 8: { /* Receive numberOfAnomalousPackets */
-                        long number = (long) tuple.getValueByField("anomalyData");
-                        LOG.warn(srcTaskId + "REPORTED " + number + "ANOMALOUS PACKETS...");
-                        //TODO implement more
+                        double number = (double) tuple.getValueByField("anomalyData");
+                        if (n == 4){
+                            writeToFile("OVERALL PACKETS DROPPED: " + state.getNumberOfPacketsDropped());
+                        }
+                        writeToFile(srcTaskId + "REPORTED " + number + "ANOMALOUS PACKETS...");
+                        n++;
+//                        LOG.warn(srcTaskId + "REPORTED " + number + "ANOMALOUS PACKETS...");
+                        break;
                     }
                 }
                 collector.ack(tuple);
@@ -249,6 +265,13 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         for(TCPFlags flags : badflags)
             emitBulkConfig(all, 17, flags);
         //emitBulkConfig(lvl2, 19, true);
+    }
+    public void writeToFile(String textToWrite){
+        try {
+            Files.write(Paths.get("/users/level4/2031647p/Desktop/eval-results.txt"), (textToWrite+"\n").getBytes(), StandardOpenOption.APPEND);
+        }catch (IOException e) {
+            LOG.error("UNABLE TO WRITE TO FILE");
+        }
     }
 
 

@@ -39,7 +39,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
         String filePath = (String) conf.get("filePath");
         p = new PacketGenerator(filePath, true, false);
         p.configure(new ArrayList<InetAddress>(), new ArrayList<InetAddress>(), new ArrayList<Integer>(),
-                new ArrayList<Integer>(), new ArrayList<>(),1);
+                new ArrayList<Integer>(), new ArrayList<>(), 1);
         p.setAnomalousTrafficPercentage(2);
     }
 
@@ -81,33 +81,35 @@ public class PacketSpoutBolt extends BaseRichBolt {
                 packet = null;
                 collector.ack(tuple);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             collector.reportError(e);
         }
     }
 
     /**
      * Report an event to the Configurator bolt.
-     * @param type the code representing the event type
+     *
+     * @param type  the code representing the event type
      * @param descr the value for the event if applicable
      */
-    private void report(int type, Object descr){
+    private void report(int type, Object descr) {
         collector.emit("Reporting", new Values(taskId, type, descr));
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP" ));
+        declarer.declareStream("IPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP"));
         declarer.declareStream("UDPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "data"));
         declarer.declareStream("TCPPackets", new Fields("timestamp", "srcMAC", "destMAC", "srcIP", "destIP", "srcPort", "destPort", "flags", "data"));
     }
 
     /**
      * Emits a packet on a stream depending on its type
+     *
      * @param packet the Generic Packet instance to be emitted
      */
-    private void emitPacket(BasicPacket packet){
-        if(packet instanceof TCPPacket){
+    private void emitPacket(BasicPacket packet) {
+        if (packet instanceof TCPPacket) {
             tcpPacket = (TCPPacket) packet;
             /** If the packet is a TCPPacket then emit it to the TCPPacket stream */
             collector.emit("TCPPackets", new Values(tcpPacket.getTimestamp(), tcpPacket.getSourceMacAddress(),
@@ -115,23 +117,20 @@ public class PacketSpoutBolt extends BaseRichBolt {
                     tcpPacket.getDst_ip(), tcpPacket.getSrc_port(), tcpPacket.getDst_port(),
                     tcpPacket.getFlags().toArray(), tcpPacket.getData().getData()));
             tcpPacket = null;
-        }
-        else if(packet instanceof UDPPacket){
-           udpPacket = (UDPPacket) packet;
+        } else if (packet instanceof UDPPacket) {
+            udpPacket = (UDPPacket) packet;
             /** If the packet is a UDPPacket then emit it to the UDPPacket stream */
             collector.emit("UDPPackets", new Values(udpPacket.getTimestamp(), udpPacket.getSourceMacAddress(),
                     udpPacket.getDestMacAddress(), udpPacket.getSrc_ip(),
                     udpPacket.getDst_ip(), udpPacket.getSrc_port(), udpPacket.getDst_port(), udpPacket.getData().getData()));
             udpPacket = null;
-        }
-        else if(packet instanceof IPPacket){
+        } else if (packet instanceof IPPacket) {
             ipPacket = (IPPacket) packet;
             /** If the packet is a IPPacket then emit it to the IPPacket stream */
             collector.emit("IPPackets", new Values(ipPacket.getTimestamp(), ipPacket.getSourceMacAddress(),
                     ipPacket.getDestMacAddress(), ipPacket.getSrc_ip(), ipPacket.getDst_ip()));
             ipPacket = null;
-        }
-        else {
+        } else {
             /** If it is not recognised, dont emit anything */
             LOG.warn("Encountered an unknown packet type");
             return;

@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  */
 public class BasicFirewallChecker implements ChecksPerformer, Serializable{
 
-    //private static final Logger LOG = LoggerFactory.getLogger(BasicFirewallChecker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicFirewallChecker.class);
     private BitSet blockedSrcPorts;
     private BitSet blockedDstPorts;
     private HashSet<InetAddress> blockedSrcIpAddr;
