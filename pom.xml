@@ -89,7 +89,7 @@
         <dependency>
             <groupId>com.github.atanaspam</groupId>
             <artifactId>pcapj</artifactId>
-            <version>7145349</version>
+            <version>4e7b305</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

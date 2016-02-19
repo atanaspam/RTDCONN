@@ -42,6 +42,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     TopologyContext context;
     ConfiguratorStateKeeper state;
     int round = 0;
+    ArrayList<Integer> aggregators;
     ArrayList<Integer> spouts;
     ArrayList<Integer> lvl0;
     ArrayList<Integer> lvl1;
@@ -63,6 +64,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         // numBolts is cast to Long due to a bug in Storm
         numBolts = (Long) conf.get("boltNum");
         spouts = new ArrayList<>();
+        aggregators = new ArrayList<>();
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
         lvl2 = new ArrayList<>();
@@ -78,8 +80,10 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 lvl1.add(entry.getKey());
             }else if (entry.getValue().equals("node_0_lvl_2")) {
                 lvl2.add(entry.getKey());
-            } else if (entry.getValue().equals("emitter_bolt")) {
+            }else if (entry.getValue().equals("emitter_bolt")) {
                 spouts.add(entry.getKey());
+            }else if (entry.getValue().equals("Aggregator")) {
+                aggregators.add(entry.getKey());
             }
         }
         if (numBolts.intValue() > map.size()){
@@ -110,12 +114,13 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
 //                LOG.info(state.toString());
                 round++;
                 LOG.info("Round: " + round);
-                if (round == 10) {
+                if (round == 3) {
 //                LOG.info("Changing anomaly...");
 //                emitBulkConfig(spouts,30, 1);
 //                emitBulkConfig(spouts,31, 40);
                     LOG.error("NUMBER OF PACKETS Detected : " + state.getNumberOfPacketsDropped());
                     emitBulkConfig(spouts, 32, 1);
+                    emitBulkConfig(aggregators, 32, 1);
                     round++;
                 }
                 //TODO emit config according to current stats
@@ -187,13 +192,19 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                         }
                     }
                     case 8: { /* Receive numberOfAnomalousPackets */
-                        double number = (double) tuple.getValueByField("anomalyData");
+                        long number = (long) tuple.getValueByField("anomalyData");
+                        n++;
                         if (n == 4){
                             writeToFile("OVERALL PACKETS DROPPED: " + state.getNumberOfPacketsDropped());
                         }
-                        writeToFile(srcTaskId + "REPORTED " + number + "ANOMALOUS PACKETS...");
-                        n++;
-                        LOG.warn(srcTaskId + "REPORTED " + number + "ANOMALOUS PACKETS...");
+                        writeToFile("Firewall REPORTED " + number + " ANOMALOUS PACKETS...");
+                        LOG.warn("Firewall REPORTED " + number + " ANOMALOUS PACKETS...");
+                        break;
+                    }
+                    case 9: { /* Receive numberOfAnomalousPackets */
+                        long number = (long) tuple.getValueByField("anomalyData");
+                        writeToFile("Aggregator REPORTED " + number + " ANOMALOUS PACKETS...");
+                        LOG.warn("Aggregator REPORTED " + number + " ANOMALOUS PACKETS...");
                         break;
                     }
                 }
