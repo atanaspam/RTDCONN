@@ -24,6 +24,7 @@ public class PacketSpout extends BaseRichSpout {
     private UUID msgId;
     private long packets;
     private boolean emitLimit;
+    private final int emitLimitNum = 22500000;
 
     @Override
     public void open( Map conf, TopologyContext context, SpoutOutputCollector collector ) {
@@ -34,7 +35,7 @@ public class PacketSpout extends BaseRichSpout {
 
     @Override
     public void nextTuple() {
-        if (packets < 22500000){
+        if (packets < emitLimitNum){
             msgId = UUID.randomUUID();
             collector.emit("trigger", new Values(), msgId);
         }else {
