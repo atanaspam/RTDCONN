@@ -5,9 +5,9 @@ import com.esotericsoftware.kryo.KryoSerializable;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import java.util.Arrays;
-
 /**
+ * Represents a Cumulative Moving Average value and provides methods
+ * for easy update and calculation of the CMA
  * @author atanaspam
  * @version 0.1
  * @created 09/02/2016
@@ -27,7 +27,7 @@ public class CMA implements KryoSerializable{
     }
 
     /**
-     * Adds a new value to the cumulative Moving Average until now
+     * Adds a new value to the Cumulative Moving Average until now
      * @param value the new value to be added
      * @return true if the new value is larger than the CMA before the update, false otherwise
      */
@@ -43,6 +43,9 @@ public class CMA implements KryoSerializable{
         return cumulativeMovingAverage;
     }
 
+    /**
+     * Resets the state of the CMA
+     */
     public void clear(){
         cumulativeMovingAverage = 0;
         numberOfDatumPoints = 0;
@@ -66,72 +69,3 @@ public class CMA implements KryoSerializable{
         numberOfDatumPoints = input.readInt();
     }
 }
-
-
-//public class CMA implements KryoSerializable{
-//
-//    int cumulativeMovingAverage;
-//    int[] oldValues;
-//    int index;
-//
-//    public CMA(int value, int numberOfDatumPoints) {
-//        index = 0;
-//        this.oldValues = new int[10];
-//        oldValues[index++] = value;
-//        this.cumulativeMovingAverage = value;
-//    }
-//    public CMA(){
-//        index =0;
-//        this.cumulativeMovingAverage = 0;
-//        this.oldValues = new int[10];
-//    }
-//
-//    /**
-//     * Adds a new value to the cumulative Moving Average until now
-//     * @param value the new value to be added
-//     * @return true if the new value is larger than the CMA before the update, false otherwise
-//     */
-//    public void addValue(int value) {
-//
-//        //System.out.println(index);
-//        cumulativeMovingAverage = (cumulativeMovingAverage - oldValues[index]) + value;
-//        //System.out.println(oldValues[index]);
-//        oldValues[index] = value;
-//        //System.out.println("-----"+oldValues[index]);
-//        index++;
-//        if (index == oldValues.length){
-//            index = 0;
-//        }
-//    }
-//
-//    public void setCumulativeMovingAverage(int cumulativeMovingAverage) {
-//        this.cumulativeMovingAverage = cumulativeMovingAverage;
-//    }
-//    public int getCumulativeMovingAverage() {
-//        return cumulativeMovingAverage/10;
-//    }
-//
-//    public void clear(){
-//        cumulativeMovingAverage = 0;
-//         for (int i=0; i< oldValues.length; i++){
-//             oldValues[i] = 0;
-//         }
-//    }
-//
-//    @Override
-//    public String toString() {
-//        return "CMA=" + cumulativeMovingAverage/10;
-//    }
-//
-//    @Override
-//    public void write(Kryo kryo, Output output) {
-//        output.writeInt(cumulativeMovingAverage);
-//        kryo.writeClassAndObject(output, oldValues);
-//    }
-//
-//    @Override
-//    public void read(Kryo kryo, Input input) {
-//        cumulativeMovingAverage = input.readInt();
-//        oldValues = (int[]) kryo.readClassAndObject(input);
-//    }
-//}

@@ -1,14 +1,11 @@
 package uk.ac.gla.atanaspam.network;
 
+import static org.testng.AssertJUnit.assertEquals;
+
 import org.testng.annotations.Test;
 import uk.ac.gla.atanaspam.network.utils.HitCountKeeper;
-import uk.ac.gla.atanaspam.network.utils.HitCountPair;
-
-import static org.testng.AssertJUnit.assertEquals;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Random;
 
 /**
@@ -30,7 +27,6 @@ public class HitCountKeeperTest {
         }
         int j=0;
         int result = 0;
-        //k.addSrcIpHitCount(a, 10);
         Random r = new Random();
         for (int i=0; i<10; i++){
             j=r.nextInt(9999)+1;
@@ -40,7 +36,6 @@ public class HitCountKeeperTest {
                 result = (j + (i * result)) / (i + 1);
             }
             k.addSrcIpHitCount(a, j);
-            //System.out.println(j + " --- " + k.getSrcIpCMA(a) + " -- " + result);
         }
         assertEquals(result, k.getSrcIpCMA(a));
     }

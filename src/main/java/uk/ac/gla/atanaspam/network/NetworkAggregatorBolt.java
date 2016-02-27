@@ -18,9 +18,9 @@ import java.util.Map;
 /**
  * This bolt currently represents all the clients within a datacenter topology and
  * therefore accepts all the packets that have managed to pass through the topology
- * currently it only counts all the packets it recieves.
+ * currently it monitors the number of packets that reach it and meet a specific criteria.
  * @see NetworkNodeBolt - to see where packets are comming from
- * @see NetworkConfiguratorBolt - to see where this bolt sends events (IT DOES NOT DO IT YET)
+ * @see NetworkConfiguratorBolt - to see where this bolt sends events
  * @author atanaspam
  * @created 06/10/2015
  * @version 0.1
@@ -40,7 +40,6 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
         blockedIp = new HashSet<>();
         try {
             blockedIp.add(InetAddress.getByName("192.168.1.1"));
-            //monitoredIP.add(InetAddress.getByName("192.168.1.2"));
         }catch (Exception e){}
     }
 
@@ -73,7 +72,6 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
 
     /**
      * Report an event to the Configurator bolt.
-     *
      * @param type  the code representing the event type
      * @param descr the value for the event if applicable
      */

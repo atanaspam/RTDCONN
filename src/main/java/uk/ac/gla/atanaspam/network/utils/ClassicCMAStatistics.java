@@ -94,7 +94,7 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
             if (hitCount.addSrcIpHitCount(a.getKey(), a.getValue())) {
                 if (a.getValue() > detectionFloor) {
                     report(3, a.getKey(), collector);
-                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
+//                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
             }
         }
@@ -103,7 +103,7 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
             if (hitCount.addDesIpHitCount(a.getKey(), a.getValue())) {
                 if (a.getValue() > detectionFloor) {
                     report(3, a.getKey(), collector);
-                        LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
+//                        LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
             }
         }

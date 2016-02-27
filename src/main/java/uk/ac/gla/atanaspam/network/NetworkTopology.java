@@ -15,8 +15,6 @@ import uk.ac.gla.atanaspam.network.utils.*;
 
 import java.net.InetAddress;
 import java.net.Inet4Address;
-import java.util.ArrayList;
-
 
 /**
  * This class specifies the Network topology and runs the topology for 10 seconds
@@ -28,8 +26,6 @@ public class NetworkTopology {
 
     private static final Logger LOG = LoggerFactory.getLogger(NetworkTopology.class);
 
-    private static final int DEFAULT_RUNTIME_IN_SECONDS = 60;
-    private static final int TOP_N = 5;
     private static final int NUM_SPOUTS = 4;
     private static final int NUM_CONTROLLERS = 1;
     private static final int NUM_LVL0_BOLTS = 2;
@@ -104,13 +100,6 @@ public class NetworkTopology {
         conf.registerSerialization(Inet4Address.class, Inet4AddressSerializer.class);
         conf.registerSerialization(HitCountPair.class);
         conf.registerSerialization(HitCountKeeper.class);
-//        conf.registerSerialization(BasicFirewallChecker.class);
-//        conf.registerSerialization(ClassicCMAStatistics.class);
-//        conf.registerSerialization(DPIFirewallChecker.class);
-//        conf.registerSerialization(EmptyFirewallChecker.class);
-//        conf.registerSerialization(EmptyStatisticsGatherer.class);
-//        conf.registerSerialization(FullFirewallChecker.class);
-//        conf.registerSerialization(SlidingWindowCMAStatistics.class);
         conf.registerSerialization(boolean[].class);
         conf.setFallBackOnJavaSerialization(false);
         conf.put("timeCheck", false);
@@ -121,7 +110,7 @@ public class NetworkTopology {
         if (mode.equals("remote")) {
             conf.setNumWorkers(NUM_BOLTS + 1);
             conf.setNumAckers(NUM_BOLTS+ 1);
-            conf.setMaxSpoutPending(5000);
+            conf.setMaxSpoutPending(7000);
             try {
                 StormSubmitter.submitTopology(topologyName, conf, builder.createTopology());
             } catch (AlreadyAliveException e) {

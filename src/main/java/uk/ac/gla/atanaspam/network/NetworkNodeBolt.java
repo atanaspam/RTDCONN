@@ -46,8 +46,9 @@ public class NetworkNodeBolt extends BaseRichBolt {
     private int checkVerbosity;
     private int statisticsVerbosity;
     private boolean timeChecks;
-    private int packetsProcessed;
+    private int currentPacketsProcessed;
     private int detectionRatio;
+    private long packetsProcessed;
 
     /**
      * Initializes a NetworkNodeBolt with a specific state
@@ -77,6 +78,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
         handleCheckVerbosityChange(checksVerbosity);
         handleStatisticsVerbosityChange(statisticsVerbosity);
 
+        currentPacketsProcessed = 0;
         packetsProcessed = 0;
         this.checkVerbosity = checksVerbosity;
         this.statisticsVerbosity = statisticsVerbosity;
@@ -199,7 +201,11 @@ public class NetworkNodeBolt extends BaseRichBolt {
                             statistics.setDetectionRatio((int) tuple.getValueByField("setting"));
                             LOG.debug(taskId + " Changed detection ratio to :" + (int) tuple.getValueByField("setting"));
                         }
-
+                        case 32: {
+                            LOG.info("NUMBER OF ANOMALOUS PACKETS: " + packetsProcessed);
+                            report(0, packetsProcessed);
+                            break;
+                        }
                     }
                     /** we return here because otherwise the performChecks() method would be invoked on the config data => crash */
                     collector.ack(tuple);
@@ -218,6 +224,7 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 LOG.error("An exception occurred during bolt "+ taskId + " execution", e);
                 collector.reportError(e);
             }
+            packetsProcessed++;
             /** Invoke performChecks() on each packet that is received
              * if performChecks returns true the packet is allowed to pass, else it is just dropped
              * */
@@ -241,11 +248,11 @@ public class NetworkNodeBolt extends BaseRichBolt {
                 }
             }
             if (statisticsVerbosity == 1){
-                packetsProcessed++;
-                if (packetsProcessed == 10000){
+                currentPacketsProcessed++;
+                if (currentPacketsProcessed == 10000){
                     LOG.info("Processed 10000 packets");
                     statistics.emitCurrentWindowCounts(collector);
-                    packetsProcessed = 0;
+                    currentPacketsProcessed = 0;
                 }
             }
             collector.ack(tuple);

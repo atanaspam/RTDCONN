@@ -18,9 +18,6 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,8 +65,6 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         lvl0 = new ArrayList<>();
         lvl1 = new ArrayList<>();
         lvl2 = new ArrayList<>();
-
-        //TODO This is temporary
         n = 0;
 
         Map<Integer, String> map = context.getTaskToComponent();
@@ -115,26 +110,22 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                 round++;
                 LOG.info("Round: " + round);
                 if (round == 10) {
-//                LOG.info("Changing anomaly...");
-//                emitBulkConfig(spouts,30, 1);
-//                emitBulkConfig(spouts,31, 40);
-                    LOG.error("NUMBER OF PACKETS Detected : " + state.getNumberOfPacketsDropped());
+                    LOG.info("NUMBER OF PACKETS Detected : " + state.getNumberOfPacketsDropped());
                     emitBulkConfig(spouts, 32, 1);
                     emitBulkConfig(aggregators, 32, 1);
+                    writeToFile("OVERALL DROPPED: " + state.getNumberOfPacketsDropped());
                     round++;
                 }
                 //TODO emit config according to current stats
-                //TODO change Integer to int
                 collector.ack(tuple);
             } else {
                 /** obtain the message from a bolt */
                 int srcTaskId = (int) tuple.getValueByField("taskId");
                 int anomalyType = (int) tuple.getValueByField("anomalyType");
                 /** we check for all known error codes */
-                //LOG.info(srcTaskId + " " +  anomalyType + "");
                 switch (anomalyType) {
                     case 1: {   // 1 means lots of hits to a single port
-                        Integer port = (Integer) tuple.getValueByField("anomalyData");
+                        int port = (int) tuple.getValueByField("anomalyData");
                         if (state.addPortHit(port, srcTaskId, round)) {
                             //TODO here we handle blocking or restructuring
                             LOG.info("Lots of hits to " + port);
@@ -142,7 +133,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                         break;
                     }
                     case 2: {    /* 2 means hits to an unexpected port */
-                        int port = (Integer) tuple.getValueByField("anomalyData");
+                        int port = (int) tuple.getValueByField("anomalyData");
                         if (state.addUnexpPortHit(port, srcTaskId, round)) {
                             //TODO here we handle blocking or restructuring
                             LOG.info("Unexpected hit to" + port);
@@ -176,7 +167,6 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     case 6: {    /* 6 means a dropped packet */
                         InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
 //                        if (state.addDroppedPacket(ip, srcTaskId, round)) {
-//                            //TODO here we handle blocking or restructuring
 //                            state.incrementDroppedPacket();
 //                            //LOG.info("Dropped: " + ip);
 //                        }
@@ -184,7 +174,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                         break;
                     }
                     case 7: { /* anomalious flag trafic */
-                        int flagNum = (Integer) tuple.getValueByField("anomalyData");
+                        int flagNum = (int) tuple.getValueByField("anomalyData");
                         if (state.addBadFlagHit(flagNum, srcTaskId, round)) {
                             //TODO here we handle blocking or restructuring
                             LOG.info("Anomalous flag detected...");
@@ -193,18 +183,28 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     }
                     case 8: { /* Receive numberOfAnomalousPackets */
                         long number = (long) tuple.getValueByField("anomalyData");
-                        n++;
-                        if (n == 4){
-                            writeToFile("OVERALL PACKETS DROPPED: " + state.getNumberOfPacketsDropped());
-                        }
-                        writeToFile("Firewall REPORTED " + number + " ANOMALOUS PACKETS...");
-                        LOG.warn("Firewall REPORTED " + number + " ANOMALOUS PACKETS...");
+                        writeToFile("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
+                        LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
                         break;
                     }
                     case 9: { /* Receive numberOfAnomalousPackets */
                         long number = (long) tuple.getValueByField("anomalyData");
                         writeToFile("Aggregator REPORTED " + number + " ANOMALOUS PACKETS...");
                         LOG.warn("Aggregator REPORTED " + number + " ANOMALOUS PACKETS...");
+                        break;
+                    }
+                    case 0: { /* Receive numberOfAnomalousPackets */
+                        long number = (long) tuple.getValueByField("anomalyData");
+                        if (lvl0.contains(srcTaskId)){
+                            writeToFile("LVL0 bolt processed " + number);
+                            LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
+                        }else if (lvl1.contains(srcTaskId)){
+                            writeToFile("LVL1 bolt processed " + number);
+                            LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
+                        }else{
+                            writeToFile("LVL2 bolt processed " + number);
+                            LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
+                        }
                         break;
                     }
                 }

@@ -73,7 +73,6 @@ public class PacketSpoutBolt extends BaseRichBolt {
                         break;
                     }
                 }
-                //TODO configure packetGenerator
                 collector.ack(tuple);
             } else {
                 BasicPacket packet = p.getPacket();
