@@ -198,13 +198,13 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                         long number = (long) tuple.getValueByField("anomalyData");
                         if (lvl0.contains(srcTaskId)){
                             writeToFile("LVL0 bolt processed " + number);
-                            LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
+                            LOG.warn("LVL0 bolt processed " + number);
                         }else if (lvl1.contains(srcTaskId)){
                             writeToFile("LVL1 bolt processed " + number);
-                            LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
+                            LOG.warn("LVL1 bolt processed " + number);
                         }else{
                             writeToFile("LVL2 bolt processed " + number);
-                            LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
+                            LOG.warn("LVL2 bolt processed " + number);
                         }
                         break;
                     }
