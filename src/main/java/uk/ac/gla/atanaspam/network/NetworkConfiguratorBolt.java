@@ -113,6 +113,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     LOG.info("NUMBER OF PACKETS Detected : " + state.getNumberOfPacketsDropped());
                     emitBulkConfig(spouts, 32, 1);
                     emitBulkConfig(aggregators, 32, 1);
+                    emitBulkConfig(all, 32, 1);
                     writeToFile("OVERALL DROPPED: " + state.getNumberOfPacketsDropped());
                     round++;
                 }

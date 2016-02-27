@@ -197,11 +197,11 @@ public class NetworkNodeBolt extends BaseRichBolt {
                             LOG.debug(taskId + " Added a new ApplicationLayer signature to blocked.");
                             break;
                         }
-                        case 22: {
+                        case 22: { // set the detection Ratio
                             statistics.setDetectionRatio((int) tuple.getValueByField("setting"));
                             LOG.debug(taskId + " Changed detection ratio to :" + (int) tuple.getValueByField("setting"));
                         }
-                        case 32: {
+                        case 32: { // report the number of packets processed to the configurator
                             LOG.info("NUMBER OF ANOMALOUS PACKETS: " + packetsProcessed);
                             report(0, packetsProcessed);
                             break;
