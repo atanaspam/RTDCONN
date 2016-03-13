@@ -98,7 +98,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         if (mode != null) {
             if (conf.get("mode").equals("remote")) {
                 isRemote = true;
-                writeToFile("------  " + context.getStormId() + " ------");
+                writeToFile("------," + context.getStormId() + ",------");
             }
         }
     }
