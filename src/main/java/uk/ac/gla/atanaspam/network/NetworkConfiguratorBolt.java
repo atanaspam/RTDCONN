@@ -47,6 +47,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     ArrayList<Integer> all;
     boolean isRemote;
     int n;
+    String topologyName;
 
     /**
      * Prepares the configurator bolt by initializing all the appropriate fields and obtaining
@@ -89,6 +90,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             LOG.trace("USING MAP SIZE FOR STATEKEEPER - " + map.size());
         }
 
+        topologyName = context.getStormId();
+
         all = new ArrayList<>();
         all.addAll(lvl0);
         all.addAll(lvl1);
@@ -98,7 +101,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         if (mode != null) {
             if (conf.get("mode").equals("remote")) {
                 isRemote = true;
-                writeToFile("------," + context.getStormId() + ",------");
+                //writeToFile("------," + topologyName + ",------");
             }
         }
     }
@@ -114,7 +117,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     emitBulkConfig(spouts, 32, 1);
                     emitBulkConfig(aggregators, 32, 1);
                     emitBulkConfig(all, 32, 1);
-                    writeToFile("OVERALL DROPPED: " + state.getNumberOfPacketsDropped());
+                    writeToFile(topologyName+",OVERALL,"+state.getNumberOfPacketsDropped()+", DROPPED");
                     round++;
                 }
                 //TODO emit config according to current stats
@@ -184,26 +187,26 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     }
                     case 8: { /* Receive numberOfAnomalousPackets */
                         long number = (long) tuple.getValueByField("anomalyData");
-                        writeToFile("Emitter," + number + "EMITTED");
+                        writeToFile(topologyName+",Emitter," + number + "EMITTED");
                         LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
                         break;
                     }
                     case 9: { /* Receive numberOfAnomalousPackets */
                         long number = (long) tuple.getValueByField("anomalyData");
-                        writeToFile("Aggregator," + number + ",UNWANTED");
+                        writeToFile(topologyName+",Aggregator," + number + ",UNWANTED");
                         LOG.warn("Aggregator REPORTED " + number + " ANOMALOUS PACKETS...");
                         break;
                     }
                     case 0: { /* Receive numberOfAnomalousPackets */
                         long number = (long) tuple.getValueByField("anomalyData");
                         if (lvl0.contains(srcTaskId)){
-                            writeToFile("LVL0," + number + ",PROCESSED");
+                            writeToFile(topologyName+",LVL0," + number + ",PROCESSED");
                             LOG.warn("LVL0 bolt processed " + number);
                         }else if (lvl1.contains(srcTaskId)){
-                            writeToFile("LVL1," + number + ",PROCESSED");
+                            writeToFile(topologyName+",LVL1," + number + ",PROCESSED");
                             LOG.warn("LVL1 bolt processed " + number);
                         }else{
-                            writeToFile("LVL2," + number + ",PROCESSED");
+                            writeToFile(topologyName+",LVL2," + number + ",PROCESSED");
                             LOG.warn("LVL2 bolt processed " + number);
                         }
                         break;
