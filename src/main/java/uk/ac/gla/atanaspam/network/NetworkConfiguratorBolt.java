@@ -184,26 +184,26 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     }
                     case 8: { /* Receive numberOfAnomalousPackets */
                         long number = (long) tuple.getValueByField("anomalyData");
-                        writeToFile("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
+                        writeToFile("Emitter," + number + "EMITTED");
                         LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
                         break;
                     }
                     case 9: { /* Receive numberOfAnomalousPackets */
                         long number = (long) tuple.getValueByField("anomalyData");
-                        writeToFile("Aggregator REPORTED " + number + " ANOMALOUS PACKETS...");
+                        writeToFile("Aggregator," + number + ",UNWANTED");
                         LOG.warn("Aggregator REPORTED " + number + " ANOMALOUS PACKETS...");
                         break;
                     }
                     case 0: { /* Receive numberOfAnomalousPackets */
                         long number = (long) tuple.getValueByField("anomalyData");
                         if (lvl0.contains(srcTaskId)){
-                            writeToFile("LVL0 bolt processed " + number);
+                            writeToFile("LVL0," + number + ",PROCESSED");
                             LOG.warn("LVL0 bolt processed " + number);
                         }else if (lvl1.contains(srcTaskId)){
-                            writeToFile("LVL1 bolt processed " + number);
+                            writeToFile("LVL1," + number + ",PROCESSED");
                             LOG.warn("LVL1 bolt processed " + number);
                         }else{
-                            writeToFile("LVL2 bolt processed " + number);
+                            writeToFile("LVL2," + number + ",PROCESSED");
                             LOG.warn("LVL2 bolt processed " + number);
                         }
                         break;
@@ -289,7 +289,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     public void writeToFile(String textToWrite){
         try {
             BufferedWriter out = new BufferedWriter
-                    (new FileWriter("/users/level4/2031647p/Desktop/eval-results.txt",true));
+                    (new FileWriter("/users/level4/2031647p/Desktop/eval-results.csv",true));
             out.write(textToWrite + "\n");
             out.close();
         }
