@@ -187,7 +187,7 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                     }
                     case 8: { /* Receive numberOfAnomalousPackets */
                         long number = (long) tuple.getValueByField("anomalyData");
-                        writeToFile(topologyName+",Emitter," + number + "EMITTED");
+                        writeToFile(topologyName+",Emitter," + number + ",EMITTED");
                         LOG.warn("Emitter Emitted " + number + " ANOMALOUS PACKETS...");
                         break;
                     }
