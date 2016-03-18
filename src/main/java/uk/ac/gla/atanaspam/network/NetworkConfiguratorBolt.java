@@ -296,8 +296,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
     public void writeToFile(String textToWrite){
         try {
             BufferedWriter out = new BufferedWriter
-                    //(new FileWriter("/users/level4/2031647p/Desktop/eval-results.csv",true));
-                    (new FileWriter("/Users/atanaspam/eval-results.csv",true));
+                    (new FileWriter("/users/level4/2031647p/Desktop/eval-results.csv",true));
+                    //(new FileWriter("/Users/atanaspam/eval-results.csv",true));
             out.write(textToWrite + "\n");
             out.close();
         }
