@@ -267,10 +267,11 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         int[] blockedPorts = {};
         ArrayList<InetAddress> blockedIP = new ArrayList<>();
         ArrayList<InetAddress> monitoredIP = new ArrayList<>();
-        ArrayList<Pattern> blockedData = new ArrayList<>();
+        ArrayList<String> blockedData = new ArrayList<>();
         try {
             blockedIP .add(InetAddress.getByName("192.168.1.1"));
             //monitoredIP.add(InetAddress.getByName("192.168.1.2"));
+            blockedData.add("aaa");
         }catch (Exception e){}
         TCPFlags[] badflags = {};
 
@@ -287,12 +288,16 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
             emitBulkConfig(all, 15, ip);
         for(TCPFlags flags : badflags)
             emitBulkConfig(all, 17, flags);
+        for(String blockedContent : blockedData){
+            emitBulkConfig(all, 21, blockedContent);
+        }
         //emitBulkConfig(lvl2, 19, true);
     }
     public void writeToFile(String textToWrite){
         try {
             BufferedWriter out = new BufferedWriter
-                    (new FileWriter("/users/level4/2031647p/Desktop/eval-results.csv",true));
+                    //(new FileWriter("/users/level4/2031647p/Desktop/eval-results.csv",true));
+                    (new FileWriter("/Users/atanaspam/eval-results.csv",true));
             out.write(textToWrite + "\n");
             out.close();
         }

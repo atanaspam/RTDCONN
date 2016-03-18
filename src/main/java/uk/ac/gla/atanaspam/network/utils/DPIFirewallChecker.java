@@ -8,6 +8,7 @@ import uk.ac.gla.atanaspam.pcapj.PacketContents;
 import uk.ac.gla.atanaspam.pcapj.TCPFlags;
 
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -20,7 +21,7 @@ import java.util.regex.Pattern;
  */
 public class DPIFirewallChecker implements ChecksPerformer, Serializable{
 
-    //private static final Logger LOG = LoggerFactory.getLogger(DPIFirewallChecker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DPIFirewallChecker.class);
     private ArrayList<Pattern> blockedData;
 
     public DPIFirewallChecker() {
@@ -94,9 +95,14 @@ public class DPIFirewallChecker implements ChecksPerformer, Serializable{
             return true;
         else{
             for (Pattern p : blockedData){
-                Matcher m = p.matcher(new String(data.getData()));
-                if (m.matches()) {
-                    return false;}
+                Matcher m = null;
+                try {
+                    m = p.matcher(new String(data.getData(),"UTF-8"));
+                    if (m.matches()) {
+                        return false;}
+                } catch (UnsupportedEncodingException e) {
+                    return false;
+                }
             }
             return true;
         }

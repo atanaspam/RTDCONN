@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.pcapj.*;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -38,9 +39,14 @@ public class PacketSpoutBolt extends BaseRichBolt {
         taskId = context.getThisTaskId();
         String filePath = (String) conf.get("filePath");
         p = new PacketGenerator(filePath, true, false);
-        p.configure(new ArrayList<InetAddress>(), new ArrayList<InetAddress>(), new ArrayList<Integer>(),
-                new ArrayList<Integer>(), new ArrayList<>(), 1);
-        p.setAnomalousTrafficPercentage(2);
+        ArrayList<InetAddress> a = new ArrayList<>();
+        try {
+            a.add(InetAddress.getByName("10.10.1.1"));
+        } catch (UnknownHostException e) {
+        }
+        p.configure(a, new ArrayList<InetAddress>(), new ArrayList<Integer>(),
+                new ArrayList<Integer>(), new ArrayList<>(), 5, new ArrayList<>());
+        p.setAnomalousTrafficPercentage(20);
     }
 
     @Override
@@ -58,7 +64,7 @@ public class PacketSpoutBolt extends BaseRichBolt {
                     case 30: {
                         int anomaly = (Integer) tuple.getValueByField("setting");
                         LOG.info("Changing anomaly to " + anomaly);
-                        p.configure(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), anomaly);
+                        p.configure(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), anomaly, new ArrayList<>());
                         break;
                     }
                     case 31: {
