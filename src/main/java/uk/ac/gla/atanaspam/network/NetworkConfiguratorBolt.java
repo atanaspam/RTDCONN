@@ -33,21 +33,29 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(NetworkConfiguratorBolt.class);
     private OutputCollector collector;
-    int taskId;
-    Long numBolts;
-    int[] commandHistory;
-    TopologyContext context;
-    ConfiguratorStateKeeper state;
-    int round = 0;
-    ArrayList<Integer> aggregators;
-    ArrayList<Integer> spouts;
-    ArrayList<Integer> lvl0;
-    ArrayList<Integer> lvl1;
-    ArrayList<Integer> lvl2;
-    ArrayList<Integer> all;
-    boolean isRemote;
-    int n;
-    String topologyName;
+
+    private int[] blockedPorts;
+    private ArrayList<InetAddress> blockedIP;
+    private ArrayList<InetAddress> monitoredIP;
+    private ArrayList<String> blockedData;
+    private TCPFlags[] badflags;
+
+
+    private int taskId;
+    private Long numBolts;
+    private int[] commandHistory;
+    private TopologyContext context;
+    protected ConfiguratorStateKeeper state;
+    private int round = 0;
+    private ArrayList<Integer> aggregators;
+    private ArrayList<Integer> spouts;
+    private ArrayList<Integer> lvl0;
+    private ArrayList<Integer> lvl1;
+    private ArrayList<Integer> lvl2;
+    private ArrayList<Integer> all;
+    private boolean isRemote;
+    private int n;
+    private String topologyName;
 
     /**
      * Prepares the configurator bolt by initializing all the appropriate fields and obtaining
@@ -67,6 +75,12 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         lvl1 = new ArrayList<>();
         lvl2 = new ArrayList<>();
         n = 0;
+
+        blockedPorts = new int[0];
+        blockedIP = new ArrayList<>();
+        monitoredIP = new ArrayList<>();
+        blockedData = new ArrayList<>();
+        badflags = new TCPFlags[0];
 
         Map<Integer, String> map = context.getTaskToComponent();
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
@@ -160,12 +174,8 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
                         }
                         break;
                     }
-                    case 5: {    /* 5 means hits to an unexpected IP */
-                        InetAddress ip = (InetAddress) tuple.getValueByField("anomalyData");
-                        if (state.addUnexpIpHit(ip, srcTaskId, round)) {
-                            //TODO here we handle blocking or restructuring
-                            LOG.info("Unexpected hit to:  " + ip);
-                        }
+                    case 5: {    /* 5 means ask for reconfiguration */
+                        reconfigure(srcTaskId);
                         break;
                     }
                     case 6: {    /* 6 means a dropped packet */
@@ -264,16 +274,11 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
      * and can be used to restore all the configuration to its default state.
      */
     public void initialConfig(){
-        int[] blockedPorts = {};
-        ArrayList<InetAddress> blockedIP = new ArrayList<>();
-        ArrayList<InetAddress> monitoredIP = new ArrayList<>();
-        ArrayList<String> blockedData = new ArrayList<>();
         try {
             blockedIP .add(InetAddress.getByName("192.168.1.1"));
             //monitoredIP.add(InetAddress.getByName("192.168.1.2"));
             blockedData.add("aaa");
         }catch (Exception e){}
-        TCPFlags[] badflags = {};
 
         //emitBulkConfig(lvl0, 20, false); (this is default)   // top level does not gather statistics
         emitBulkConfig(lvl0, 10, 1);        // top level performs no checks
@@ -293,6 +298,40 @@ public class NetworkConfiguratorBolt extends BaseRichBolt {
         }
         //emitBulkConfig(lvl2, 19, true);
     }
+
+    /**
+     * Sends all the available configuration to a node
+     * Used in case of a node failure, in order to bring the failed node up to speed with teh system-wide configuration
+     * @param dest the taskId of the node to be addressed.
+     */
+    private void reconfigure (int dest){
+        if (lvl0.contains(dest)){
+            emitConfig(dest, 10, 1);
+        }else if (lvl1.contains(dest)){
+            emitConfig(dest, 10, 2);
+        }else{
+            emitConfig(dest, 20, 1);
+        }
+        emitConfig(dest, 10, 1);
+        emitConfig(dest, 10, 2);
+        for(int port : blockedPorts)
+            emitBulkConfig(all, 11, port);
+        for(InetAddress ip : blockedIP)
+            emitBulkConfig(all, 13, ip);
+        for(InetAddress ip : monitoredIP)
+            emitBulkConfig(all, 15, ip);
+        for(TCPFlags flags : badflags)
+            emitBulkConfig(all, 17, flags);
+        for(String blockedContent : blockedData){
+            emitBulkConfig(all, 21, blockedContent);
+        }
+    }
+
+    /**
+     * Dumps the string given to a file on the filesystem
+     * Allows the configurator to dump its state before shutdown.
+     * @param textToWrite a string representation of the file to write
+     */
     public void writeToFile(String textToWrite){
         try {
             BufferedWriter out = new BufferedWriter

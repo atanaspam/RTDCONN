@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
+ * Recieves a tuple from the PacketSpout and emits a packet to the topology
  * @author atanaspam
  * @version 0.1
  * @created 12/01/2016

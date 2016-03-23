@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.regex.Pattern;
 
 /**
+ * Represents a module capable fo performing a set of IDS detections
+ * @see ChecksPerformer
  * @author atanaspam
  * @version 0.1
  * @created 16/02/2016
@@ -36,7 +38,7 @@ public class BasicFirewallChecker implements ChecksPerformer, Serializable{
 
     /**
      * Performs checks upon a packet instance depending on the verbosity specified
-     * @param packet CHANGEME an integer representing the verbosity value (0 - do nothing, 1 - check ports, 2 - check IP's, 3 - check Flags)
+     * @param packet the packet instance to be checked
      * @return true if all the checks succeed, false otherwise
      */
     @Override

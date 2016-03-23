@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 /**
+ * A data structure responsible for storing the number of hit counts for specific packet fields.
+ * The data structure is implemented to facilitate O(1) inclusion and extraction of values when needed
  * @author atanaspam
  * @version 0.1
  * @created 10/01/2016
@@ -22,6 +24,9 @@ public class HitCountKeeper implements Serializable{
     private HashMap<Integer, CMA> portHitCount;
     private Long[] flagCount;
 
+    /**
+     * A basic constructor to initialize the internal data structures
+     */
     public HitCountKeeper(){
         srcIpHitCount = new HashMap<>();
         destIpHitCount = new HashMap<>();
@@ -31,6 +36,13 @@ public class HitCountKeeper implements Serializable{
             flagCount[i] = new Long(0);
     }
 
+    /**
+     * Enables a currently collected hitCount to be copied into a new object
+     * @param newSrcIpHitCount
+     * @param newDestIpHitCount
+     * @param newPortHitCount
+     * @param newFlagCount
+     */
     public void set(HashMap<InetAddress, CMA> newSrcIpHitCount, HashMap<InetAddress, CMA> newDestIpHitCount,
                     HashMap<Integer, CMA> newPortHitCount, Long[] newFlagCount){
         srcIpHitCount = new HashMap<>(newSrcIpHitCount);
@@ -43,7 +55,9 @@ public class HitCountKeeper implements Serializable{
         this.detectionRatio = detectionRatio;
     }
 
-
+    /**
+     * Clears all the data stored
+     */
     public void clearHitCounts(){
         srcIpHitCount.clear();
         destIpHitCount.clear();

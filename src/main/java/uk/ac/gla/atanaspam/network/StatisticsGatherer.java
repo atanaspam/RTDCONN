@@ -5,6 +5,7 @@ import backtype.storm.task.OutputCollector;
 import java.net.InetAddress;
 
 /**
+ * Defines the minimum capabilities expected out of each module that performs statistical checks
  * @author atanaspam
  * @version 0.1
  * @created 15/02/2016

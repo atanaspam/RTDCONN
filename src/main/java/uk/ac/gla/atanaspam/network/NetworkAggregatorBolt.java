@@ -33,6 +33,13 @@ public class NetworkAggregatorBolt extends BaseRichBolt {
     long packetCount;
     HashSet<InetAddress> blockedIp;
 
+    /**
+     * Prepares the bolt for execution
+     * Additionally it initializes the data structure that monitors for anomalous traffic that might have been undetected.
+     * @param conf
+     * @param context
+     * @param collector
+     */
     public void prepare( Map conf, TopologyContext context, OutputCollector collector ) {
         this.collector = collector;
         taskId = context.getThisTaskId();

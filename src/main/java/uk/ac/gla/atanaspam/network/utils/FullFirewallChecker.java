@@ -14,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * Represents a module capable fo performing a set of IDS detections
  * @author atanaspam
  * @version 0.1
  * @created 15/02/2016
@@ -28,6 +29,9 @@ public class FullFirewallChecker implements ChecksPerformer, Serializable{
     private HashSet<TCPFlags> blockedFlags;
     private ArrayList<Pattern> blockedData;
 
+    /**
+     * Basic constructor to initialize the data structures
+     */
     public FullFirewallChecker() {
         blockedSrcPorts = new BitSet(65536);
         blockedDstPorts = new BitSet(65536);

@@ -3,6 +3,8 @@ package uk.ac.gla.atanaspam.network.utils;
 import com.esotericsoftware.kryo.KryoSerializable;
 
 /**
+ * Represents a Cumulative Moving Average value storing data for 10 iterations and provides methods
+ * for easy update and calculation of the CMA
  * @author atanaspam
  * @version 0.1
  * @created 17/02/2016
@@ -46,6 +48,9 @@ public class Last10CMA {
         return cumulativeMovingAverage/10;
     }
 
+    /**
+     * Resets the state of the CMA
+     */
     public void clear(){
         cumulativeMovingAverage = 0;
          for (int i=0; i< oldValues.length; i++){

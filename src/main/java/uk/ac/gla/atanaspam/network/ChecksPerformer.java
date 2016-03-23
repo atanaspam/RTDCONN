@@ -6,6 +6,7 @@ import java.net.InetAddress;
 import java.util.regex.Pattern;
 
 /**
+ * Defines the minimum capabilities expected out of each module that performs signature checks
  * @author atanaspam
  * @version 0.1
  * @created 14/02/2016

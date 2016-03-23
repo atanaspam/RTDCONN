@@ -7,6 +7,8 @@ import java.io.Serializable;
 import java.net.InetAddress;
 
 /**
+ * Represents a module that implements statistics gathering capability
+ * This module is equivalent to performing no checks at all as it always returns true
  * @author atanaspam
  * @version 0.1
  * @created 16/02/2016

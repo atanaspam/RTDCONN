@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Represents a module that implements statistics gathering capability
+ * @see StatisticsGatherer
  * @author atanaspam
  * @version 0.1
  * @created 16/02/2016
@@ -30,6 +32,9 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(ClassicCMAStatistics.class);
 
+    /**
+     * Default constructor to initialize datastructures
+     */
     public ClassicCMAStatistics() {
         this.taskId = 0;
         this.detectionRatio = 1.5;
@@ -43,6 +48,11 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
 
     }
 
+    /**
+     * Register a Source IP address hit in the packet processed
+     * @param addr the source IP address in the packet processed
+     * @param value always 1 since only one IP ip address can be targeted by the packet
+     */
     @Override
     public void addSrcIpHit(InetAddress addr, int value) {
         if(srcIpHitCount.get(addr) != null){
@@ -52,6 +62,11 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
         }
     }
 
+    /**
+     * Register a Destination IP address hit in the packet processed
+     * @param addr the destination IP address in the packet processed
+     * @param value always 1 since only one IP ip address can be targeted by the packet
+     */
     @Override
     public void addDstIpHit(InetAddress addr, int value) {
         if(dstIpHitCount.get(addr) != null){
@@ -61,6 +76,11 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
         }
     }
 
+    /**
+     * Register a Source Port hit in the packet processed
+     * @param port the source port for the packet processed
+     * @param value always 1 since only one port hit per packet is possible
+     */
     @Override
     public void addSrcPortHit(int port, int value) {
         if(srcPortHitCount.get(port) != null){
@@ -70,6 +90,11 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
         }
     }
 
+    /**
+     * Register a Destination Port hit in the packet processed
+     * @param port the destination port for the packet processed
+     * @param value always 1 since only one port hit per packet is possible
+     */
     @Override
     public void addDstPortHit(int port, int value) {
         if(dstPortHitCount.get(port) != null){
@@ -79,18 +104,25 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
         }
     }
 
+    /**
+     * Register a flag set within a packet
+     * @param flagNum the flag number within the array of TCP flags
+     * @param value always 1 since only one flagHit per packet processed is possible
+     */
     @Override
     public void addFlagCount(int flagNum, int value) {
         flagCount[flagNum]+=value;
     }
 
+    /**
+     * Emits all the relevant data collected during the execution of an iteration
+     * @param collector the outputCollector of the bolt that has deployed this module
+     */
     @Override
     public void emitCurrentWindowCounts(OutputCollector collector) {
 
         //TODO optimize this
         for(Map.Entry<InetAddress, Integer> a : srcIpHitCount.entrySet()){
-            //LOG.info("SRC IP "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()));
-            //LOG.info("SRC IP "+ a.getKey()+" " + a.getValue().toString());
             if (hitCount.addSrcIpHitCount(a.getKey(), a.getValue())) {
                 if (a.getValue() > detectionFloor) {
                     report(3, a.getKey(), collector);
@@ -99,7 +131,6 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
             }
         }
         for(Map.Entry<InetAddress, Integer> a : dstIpHitCount.entrySet()){
-            //LOG.info("DST IP "+ a.getKey() +" "+ a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
             if (hitCount.addDesIpHitCount(a.getKey(), a.getValue())) {
                 if (a.getValue() > detectionFloor) {
                     report(3, a.getKey(), collector);
@@ -107,30 +138,6 @@ public class ClassicCMAStatistics implements StatisticsGatherer, Serializable {
                 }
             }
         }
-//
-//        for(Map.Entry<Integer, Integer> a : srcPortHitCount.entrySet()) {
-//            //LOG.info("DST IP "+ a.getKey() +" "+ a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()).toString());
-//            if (hitCount.add(a.getKey(), a.getValue())) {
-//                if (a.getValue() > detectionRatio) {
-//                    report(3, a.getKey(), collector);
-//                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " port hits");
-//                }
-//
-//            }
-//
-
-
-//
-//        if (state.getFlagCount()[4] > hitCount.getFlagCount()[4]) {
-//            report(7, 4);
-//            LOG.info("Reported flag 4 for" + state.getFlagCount()[4] + " hits");
-//        }
-//        if (state.getFlagCount()[5] > hitCount.getFlagCount()[5]) {
-//            report(7, 5);
-//            LOG.info("Reported flag 5 for " + state.getFlagCount()[4] + " hits");
-//        }
-        //TODO implement SYN flood detection using StateKeeper flagCount metric
-
         clear();
     }
 

@@ -347,6 +347,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }
     }
 
+    /**
+     * Aux method that handles the instantiation of the relevant detection module after check verbosity has been changed
+     * @param checkVerbosity
+     */
     private void handleCheckVerbosityChange(int checkVerbosity){
         switch (checkVerbosity){
             case 0: {
@@ -368,6 +372,10 @@ public class NetworkNodeBolt extends BaseRichBolt {
         }
     }
 
+    /**
+     * Aux method that handles the instantiation of the relevant detection module after check verbosity has been changed
+     * @param statisticsVerbosity
+     */
     private void handleStatisticsVerbosityChange(int statisticsVerbosity){
         switch (statisticsVerbosity){
             case 0: {

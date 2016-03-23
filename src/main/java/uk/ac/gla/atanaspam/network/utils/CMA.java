@@ -57,12 +57,22 @@ public class CMA implements KryoSerializable{
                 ", datumPoints=" + numberOfDatumPoints;
     }
 
+    /**
+     * Method for efficient serialization
+     * @param kryo
+     * @param output
+     */
     @Override
     public void write(Kryo kryo, Output output) {
         output.writeInt(cumulativeMovingAverage);
         output.writeInt(numberOfDatumPoints);
     }
 
+    /**
+     * Method for efficient desrialization
+     * @param kryo
+     * @param input
+     */
     @Override
     public void read(Kryo kryo, Input input) {
         cumulativeMovingAverage = input.readInt();

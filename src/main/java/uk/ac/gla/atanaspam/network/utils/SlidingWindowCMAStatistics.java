@@ -10,6 +10,8 @@ import java.net.InetAddress;
 import java.util.Map;
 
 /**
+ * Represents a module that implements statistics gathering capability
+ * This module employs a sliding window algorithm to output the usage patterns captured
  * @author atanaspam
  * @version 0.1
  * @created 16/02/2016
@@ -56,31 +58,59 @@ public class SlidingWindowCMAStatistics implements StatisticsGatherer {
                 DEFAULT_EMIT_FREQUENCY_IN_SECONDS));
     }
 
+    /**
+     * Register a Source IP address hit in the packet processed
+     * @param addr the source IP address in the packet processed
+     * @param value always 1 since only one IP ip address can be targeted by the packet
+     */
     @Override
-    public void addSrcIpHit(InetAddress addr, int value) {
-        srcIpHitCount.incrementCount(addr);
+    public void addSrcIpHit(InetAddress addr, int value) {srcIpHitCount.incrementCount(addr);
     }
 
+    /**
+     * Register a Destination IP address hit in the packet processed
+     * @param addr the destination IP address in the packet processed
+     * @param value always 1 since only one IP ip address can be targeted by the packet
+     */
     @Override
     public void addDstIpHit(InetAddress addr, int value) {
         dstIpHitCount.incrementCount(addr);
     }
 
+    /**
+     * Register a Source Port hit in the packet processed
+     * @param port the source port for the packet processed
+     * @param value always 1 since only one port hit per packet is possible
+     */
     @Override
     public void addSrcPortHit(int port, int value) {
         srcPortHitCount.incrementCount(port);
     }
 
+    /**
+     * Register a Destination Port hit in the packet processed
+     * @param port the destination port for the packet processed
+     * @param value always 1 since only one port hit per packet is possible
+     */
     @Override
     public void addDstPortHit(int port, int value) {
         dstPortHitCount.incrementCount(port);
     }
 
+    /**
+     * Register a flag set within a packet
+     * @param flagNum the flag number within the array of TCP flags
+     * @param value always 1 since only one flagHit per packet processed is possible
+     */
     @Override
     public void addFlagCount(int flagNum, int value) {
         flagCount[flagNum]+=value;
     }
 
+    /**
+     * Emits all the relevant data collected during the execution of an iteration
+     * @param collector the outputCollector of the bolt that has deployed this module
+     */
     @Override
     public void emitCurrentWindowCounts(OutputCollector collector) {
         int actualWindowLengthInSeconds = lastModifiedTracker.secondsSinceOldestModification();
@@ -90,43 +120,30 @@ public class SlidingWindowCMAStatistics implements StatisticsGatherer {
             return;
         }
         for(Map.Entry<InetAddress, Long> a : srcIpHitCount.getCountsThenAdvanceWindow().entrySet()){
-            //LOG.info("SRC IP "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()));
-            //LOG.info("SRC IP "+ a.getKey()+" " + a.getValue().toString());
             if (hitCount.addSrcIpHitCount(a.getKey(), a.getValue().intValue())) {
                 if (a.getValue() > detectionFloor) {
                     report(3, a.getKey(), collector);
-                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
+                    LOG.trace("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
             }
         }
 
         for(Map.Entry<InetAddress, Long> a : dstIpHitCount.getCountsThenAdvanceWindow().entrySet()){
-            //LOG.info("DST IP "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()));
-            //LOG.info("DST IP "+ a.getKey()+" " + a.getValue().toString());
             if (hitCount.addDesIpHitCount(a.getKey(), a.getValue().intValue())) {
                 if (a.getValue() > detectionFloor) {
                     report(3, a.getKey(), collector);
-                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
+                    LOG.trace("Reported " + a.getKey() + " for " + a.getValue() + " hits");
                 }
             }
         }
-//TODO finish ports
-//        for(Map.Entry<Integer, Long> a : new HashMap<>(srcPortHitCount.getCountsThenAdvanceWindow()).entrySet()){
-//            //LOG.info("DST IP "+ a.getKey()+" " + a.getValue().toString() + " || "+  hitCount.getSrcIpHitCount().get(a.getKey()));
-//            LOG.info("DST IP "+ a.getKey()+" " + a.getValue().toString());
-//            if (hitCount.addSrcIpHitCount(a.getKey(), a.getValue().intValue())) {
-//                if (a.getValue() > detectionRatio) {
-//                    report(3, a.getKey(), collector);
-//                    LOG.info("Reported " + a.getKey() + " for " + a.getValue() + " hits");
-//                }
-//            }
-//        }
-
-
-
-
     }
 
+    /**
+     * Aux method used by the slidingWindowCounter algorithm
+     * @param windowLengthInSeconds
+     * @param windowUpdateFrequencyInSeconds
+     * @return
+     */
     private int deriveNumWindowChunksFrom(int windowLengthInSeconds, int windowUpdateFrequencyInSeconds) {
         return windowLengthInSeconds / windowUpdateFrequencyInSeconds;
     }

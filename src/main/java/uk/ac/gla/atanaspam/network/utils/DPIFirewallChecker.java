@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * Represents a module capable fo performing a set of IDS detections
  * @author atanaspam
  * @version 0.1
  * @created 16/02/2016
@@ -24,6 +25,9 @@ public class DPIFirewallChecker implements ChecksPerformer, Serializable{
     private static final Logger LOG = LoggerFactory.getLogger(DPIFirewallChecker.class);
     private ArrayList<Pattern> blockedData;
 
+    /**
+     * Basic constructor to initialize the data structures
+     */
     public DPIFirewallChecker() {
         blockedData = new ArrayList<>();
     }

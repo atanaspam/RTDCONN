@@ -9,6 +9,8 @@ import java.net.InetAddress;
 import java.util.regex.Pattern;
 
 /**
+ * Represents a module capable fo performing a set of IDS detections
+ * This module is equivalent to performing no checks at all as it always returns true
  * @author atanaspam
  * @version 0.1
  * @created 16/02/2016
