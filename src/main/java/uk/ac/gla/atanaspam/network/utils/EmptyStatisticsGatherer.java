@@ -1,6 +1,6 @@
 package uk.ac.gla.atanaspam.network.utils;
 
-import backtype.storm.task.OutputCollector;
+import org.apache.storm.task.OutputCollector;
 import uk.ac.gla.atanaspam.network.StatisticsGatherer;
 
 import java.io.Serializable;

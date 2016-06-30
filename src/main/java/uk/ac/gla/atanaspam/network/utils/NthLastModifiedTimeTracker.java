@@ -18,7 +18,7 @@ package uk.ac.gla.atanaspam.network.utils;
  * limitations under the License.
  */
 
-import backtype.storm.utils.Time;
+import org.apache.storm.utils.Time;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
 
 /**

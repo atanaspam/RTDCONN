@@ -1,6 +1,6 @@
 package uk.ac.gla.atanaspam.network;
 
-import backtype.storm.task.OutputCollector;
+import org.apache.storm.task.OutputCollector;
 
 import java.net.InetAddress;
 

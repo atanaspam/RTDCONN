@@ -1,7 +1,7 @@
 package uk.ac.gla.atanaspam.network.utils;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.tuple.Values;
+import org.apache.storm.task.OutputCollector;
+import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.gla.atanaspam.network.StatisticsGatherer;

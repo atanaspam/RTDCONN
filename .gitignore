@@ -6,3 +6,11 @@ logfile*
 /bin
 /.idea
 *.jfr
+combined.pcap
+combined_2.pcap
+combined_3.pcap
+combined_4.pcap
+combined_5.pcap
+combined_8.pcap
+combined_12.pcap
+combined_16.pcap
